@@ -1,4 +1,4 @@
 export enum MatchSetting {
-    RANDOM = 'RANDOM',
-    ALGORITHMIC = 'ALGORITHMIC'
+    RANDOM = "RANDOM",
+    ALGORITHMIC = "ALGORITHMIC",
 }

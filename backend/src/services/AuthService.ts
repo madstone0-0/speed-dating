@@ -6,7 +6,7 @@ class AuthService {
         const user = await UserModel.create(data);
         return {
             status: 200,
-            data: user
+            data: user,
         };
     }
 }

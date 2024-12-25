@@ -4,6 +4,6 @@ import { AuthMiddleware } from "../middleware/authMiddleware.js";
 
 const room = new Hono();
 
-room.post('/', AuthMiddleware.requireUser, RoomController.createRoom)
+room.post("/", AuthMiddleware.requireUser, RoomController.createRoom);
 
 export default room;

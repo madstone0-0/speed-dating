@@ -8,17 +8,17 @@ import { compress } from "hono/compress";
 import { customLogger } from "./logger.js";
 import { ws, injectWebSocket } from "./routes/ws.js";
 import auth from "./routes/auth.js";
-import * as dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import * as dotenv from "dotenv";
+import mongoose from "mongoose";
 import room from "./routes/room.js";
 
 dotenv.config();
 
 const mongoUri = process.env.MONGO_URI as string;
-mongoose.connect(mongoUri)
-.then(()=> console.log('Connected boyyy!'))
-.catch((e)=> console.log(`There was an error connecting to the db: ${e}`));
-
+mongoose
+    .connect(mongoUri)
+    .then(() => console.log("Connected boyyy!"))
+    .catch((e) => console.log(`There was an error connecting to the db: ${e}`));
 
 const app = new Hono();
 app.use(logger(customLogger), cors(), compress());
@@ -32,7 +32,7 @@ app.get("/health", (c) => {
 
 app.route("/auth", auth);
 app.route("/", ws);
-app.route('/room', room);
+app.route("/room", room);
 
 const port = 3000;
 console.log(`Server is running on http://localhost:${port}`);

@@ -14,20 +14,20 @@ const signupValidator = zValidator(
     "json",
     z.object({
         nickname: z.string(),
-        host: z.boolean()
+        host: z.boolean(),
     }),
 );
 
 auth.post("/signup", signupValidator, async (c) => {
     const validated = c.req.valid("json");
     const res = await AuthService.SignUp(validated);
-    const cookie = getCookie(c, 'userId');
+    const cookie = getCookie(c, "userId");
     //cookies because cookies are automatically sent with each request
 
-    if (cookie) deleteCookie(c, 'userId');
+    if (cookie) deleteCookie(c, "userId");
 
-    setCookie(c, 'userId', res.data!._id!.toString(), {
-        maxAge: 7200 //expires after 2 hours
+    setCookie(c, "userId", res.data!._id!.toString(), {
+        maxAge: 7200, //expires after 2 hours
     });
 
     return sendSR(c, res);
