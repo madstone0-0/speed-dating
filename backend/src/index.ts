@@ -34,7 +34,7 @@ app.route("/auth", auth);
 app.route("/", ws);
 app.route("/room", room);
 
-const port = 3000;
+const port = parseInt(process.env.PORT!);
 console.log(`Server is running on http://localhost:${port}`);
 
 const server = serve({
