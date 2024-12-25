@@ -1,10 +1,7 @@
 {
 	"scripts": {
 		"heroku-prebuild-pnpm": "cd backend && pnpm install && pnpm run build && cd ..",
-		"heroku-prebuild": "cd backend && npm install && npm run build && cd ..",
-		"start": "cd backend && npm start"
-	},
-	"devDependencies": {
-		"typescript": "^5.7.2"
+		"heroku-prebuild": "cd backend && pnpm install && pnpm run build && cd ..",
+		"start": "cd backend && pnpm start"
 	}
 }
