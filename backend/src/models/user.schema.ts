@@ -7,9 +7,9 @@ const userSchema = new Schema<User>({
         required: true
     },
 
-    token: {
-        type: String,
-        required: true
+    host: {
+        type: Boolean,
+        default: false
     }
 },{
     timestamps: true

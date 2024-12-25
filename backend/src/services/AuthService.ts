@@ -1,10 +1,12 @@
-import type { PromiseReturn, ServiceReturn, SignupUser } from "../types.js";
+import { UserModel } from "../models/user.schema.js";
+import type { PromiseReturn, ServiceReturn, SignupUser, User } from "../types.js";
 
 class AuthService {
-    async SignUp(data: SignupUser): PromiseReturn<SignupUser> {
+    async SignUp(data: SignupUser): PromiseReturn<User> {
+        const user = await UserModel.create(data);
         return {
             status: 200,
-            data,
+            data: user
         };
     }
 }

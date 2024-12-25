@@ -4,26 +4,27 @@ import Mongoose from "mongoose";
 
 export interface ServiceReturn<Data = any> {
     status: number & StatusCode;
-    data: Data;
+    message?: string,
+    data?: Data;
     extra?: any;
 }
 
 export interface SignupUser {
-    email: string;
-    password: string;
+    nickname: string,
+    host?: boolean
 }
 
 export type PromiseReturn<Data = any> = Promise<ServiceReturn<Data>>;
 
 export interface Identified {
     _id?: Mongoose.Types.ObjectId,
-    createdAt: Date,
-    updatedAt: Date
+    createdAt?: Date,
+    updatedAt?: Date
 }
 
 export interface User extends Identified {
     nickname: string, 
-    token: string
+    host: boolean
 }
 
 export interface Room extends Identified {
@@ -31,7 +32,8 @@ export interface Room extends Identified {
     hostId: string | Mongoose.Types.ObjectId,
     conversationTime: number //this is in seconds
     matchSetting: string,
-    genderMatching: boolean
+    genderMatching: boolean,
+    qrCodeUrl?: string
 }
 
 export interface Question extends Identified {

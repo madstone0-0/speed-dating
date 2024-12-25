@@ -1,10 +1,15 @@
 import type { Context, Hono } from "hono";
+import { RoomService } from "../services/RoomService.js";
+import { sendSR } from "../utils.js";
 
 const createRoom = async(c: Context)=>{
     try{
-        //create room
-        //generate room qr code 
-        //return them
+        const userId = c.get('userId');
+        const room = await RoomService.createRoom(userId!);
+        return sendSR(c, {
+            status: 201,
+            data: room
+        });
     }catch(e){
         console.log('There was an error creating the room -> ', e);
         return c.json({
