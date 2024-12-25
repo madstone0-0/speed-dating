@@ -4,7 +4,7 @@
 	"scripts": {
 		"dev": "tsx watch src/index.ts",
 		"build": "pnpm tsc",
-		"prestart": "pnpm run build",
+		"prestart": "NODE_ENV=development; pnpm run build",
 		"start": "node dist/index.js"
 	},
 	"dependencies": {
@@ -16,8 +16,7 @@
 		"hono": "^4.6.14",
 		"mongoose": "^8.9.2",
 		"qrcode": "^1.5.4",
-		"zod": "^3.24.1",
-		"typescript": "^5.7.2"
+		"zod": "^3.24.1"
 	},
 	"devDependencies": {
 		"@types/mongoose": "^5.11.97",
@@ -26,6 +25,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.18.2",
 		"@typescript-eslint/parser": "^8.18.2",
 		"eslint": "^9.17.0",
-		"tsx": "^4.7.1"
+		"tsx": "^4.7.1",
+		"typescript": "^5.7.2"
 	}
 }
