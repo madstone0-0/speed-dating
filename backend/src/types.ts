@@ -28,7 +28,7 @@ export interface User extends Identified {
 }
 
 export interface Room extends Identified {
-    users: string[] | Mongoose.Types.ObjectId;
+    users: User[];
     hostId: string | Mongoose.Types.ObjectId;
     conversationTime: number; //this is in seconds
     matchSetting: string;
@@ -45,4 +45,11 @@ export interface Answer extends Identified {
     userId: string | Mongoose.Types.ObjectId;
     questionId: string | Mongoose.Types.ObjectId;
     index: number; //index of the answer chosen
+}
+
+export interface SocketMessage {
+    type: string,
+    roomId: string,
+    userNickname?: string,
+    userId?: string
 }
