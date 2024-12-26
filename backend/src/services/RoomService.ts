@@ -49,6 +49,7 @@ const joinRoom = async (userId: string, roomId: string)=>{
 
     if(!user) throw Error('User does not exist');
     room!.users.push(user);
+    //TODO make sure the nickname is unique
     await room!.save();
     return room;
 }

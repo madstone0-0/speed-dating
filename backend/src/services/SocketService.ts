@@ -17,3 +17,7 @@ const handleJoinRoomMessage = async(roomId: string, userId: string,  roomToHostM
 
     socket.send(JSON.stringify(message));
 }
+
+export const SocketService = {
+    handleJoinRoomMessage
+}

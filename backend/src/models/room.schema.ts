@@ -36,6 +36,10 @@ const roomSchema = new Schema<Room>(
             type: Boolean,
             default: true,
         },
+        qrCodeUrl: {
+            type: String,
+            required: false
+        }
     },
     {
         timestamps: true,

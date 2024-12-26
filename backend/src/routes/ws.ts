@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { createNodeWebSocket } from "@hono/node-ws";
 import type { SocketMessage } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
+import { SocketService } from "../services/SocketService.js";
 
 const ws = new Hono();
 
@@ -21,11 +22,9 @@ ws.get(
             console.log(`Message from client: ${event.data}`);
             
             const message = JSON.parse(event.data.toString());
-            const { type } = message;
+            const { type, roomId, userId } = message;
             
-            if(type == MessageTypes.JOIN){
-                
-            }
+            if(type == MessageTypes.JOIN) SocketService.handleJoinRoomMessage(roomId!, userId!, roomToHostmap);
         
         },
         onClose: () => {
