@@ -23,7 +23,7 @@ mongoose
 const app = new Hono();
 
 app.use(logger(customLogger), cors({
-    origin: '*'
+    origin: ['*']
 }), compress());
 
 app.get("/", (c) => c.json(sendMsg("Backend")));
