@@ -48,8 +48,8 @@ export interface Answer extends Identified {
 }
 
 export interface SocketMessage {
-    type: string,
-    roomId: string,
-    userNickname?: string,
-    userId?: string
+    type: string;
+    roomId: string;
+    userNickname?: string;
+    userId?: string;
 }
