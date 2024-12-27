@@ -23,13 +23,11 @@ const createRoom = async (
     });
 
     // Temp
-    // const url = await generateRoomQRCode(room._id.toString());
-    // room.qrCodeUrl = url;
-    // room.save();
-
-    room.qrCodeUrl = "DUMMY";
+    const url = await generateRoomQRCode(room._id.toString());
+    room.qrCodeUrl = url;
     room.save();
 
+    // room.qrCodeUrl = "DUMMY";
     return room;
 };
 

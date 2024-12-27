@@ -16,7 +16,13 @@ export function HostLobby() {
     }, []);
 
     useEffect(() => {
-        socket.addEventListener("message", () => {});
+        socket.addEventListener("open", ()=>{
+            console.log('Connection created!');
+        });
+
+        socket.addEventListener("message", () => {
+
+        });
 
         return () => {
             socket.close();
@@ -34,6 +40,7 @@ export function HostLobby() {
             }
 
             const data = request.data.data;
+            console.log('Create room response -> ', data);
             const { qrCodeUrl } = data;
 
             setQrCodeUrl(qrCodeUrl);
@@ -48,6 +55,13 @@ export function HostLobby() {
             <div className="qrHolder">
                 <h1> Scan the QR code to join the room!</h1>
                 {qrCodeUrl == "" ? <h1>Loading...</h1> : <img src={qrCodeUrl} />}
+            </div>
+            <div className="nameHolder">
+                {users.map((u)=>{
+                    return (
+                        <h2>{u}</h2>
+                    );
+                })}
             </div>
         </div>
     );

@@ -17,7 +17,7 @@ export function Start() {
             });
             if (request.status == 200) setUserCreated(true);
 
-            console.log("Error response ->", request);
+            console.log("Response ->", request);
             setLoading(false);
         } catch (e: any) {
             console.log("There was an error signing user up -> ", e);
