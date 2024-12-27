@@ -22,12 +22,16 @@ mongoose
 
 const app = new Hono();
 
-app.use(cors({
-    origin: '*', // Allow all origins (not recommended for production)
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
-    allowHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
-    maxAge: 600, // Cache the preflight response for 600 seconds
-}));
+app.use(
+    cors({
+        // origin: "*", // Allow all origins (not recommended for production)
+        origin: ["http://localhost:5173"],
+        allowMethods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
+        allowHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
+        maxAge: 600, // Cache the preflight response for 600 seconds
+        credentials: true,
+    }),
+);
 app.use(logger(customLogger), compress());
 
 app.get("/", (c) => c.json(sendMsg("Backend")));
