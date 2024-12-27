@@ -5,15 +5,8 @@ import { z } from "zod";
 import AuthService from "../services/AuthService.js";
 import type { SignupUser } from "../types.js";
 import { setCookie, getCookie, deleteCookie } from "hono/cookie";
-import { cors } from "hono/cors";
 
 const auth = new Hono();
-auth.use('*', cors({
-    origin: '*', // Allow all origins (not recommended for production)
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
-    allowHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
-    maxAge: 600, // Cache the preflight response for 600 seconds
-}));
 
 auth.get("/info", (c) => c.json(sendMsg("Auth Route")));
 
