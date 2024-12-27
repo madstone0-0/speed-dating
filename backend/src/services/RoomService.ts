@@ -22,8 +22,12 @@ const createRoom = async (
         genderMatching: genderMatching,
     });
 
-    const url = await generateRoomQRCode(room._id.toString());
-    room.qrCodeUrl = url;
+    // Temp
+    // const url = await generateRoomQRCode(room._id.toString());
+    // room.qrCodeUrl = url;
+    // room.save();
+
+    room.qrCodeUrl = "DUMMY";
     room.save();
 
     return room;
@@ -37,26 +41,26 @@ const generateRoomQRCode = async (roomId: string) => {
     return qrCodeUrl;
 };
 
-const getRoom = async (roomId: string)=>{
+const getRoom = async (roomId: string) => {
     const room = await RoomModel.findOne({ _id: roomId });
-    if(!room) return null;
+    if (!room) return null;
     return room;
-}
+};
 
-const joinRoom = async (userId: string, roomId: string)=>{
-    const room  = await getRoom(roomId);
+const joinRoom = async (userId: string, roomId: string) => {
+    const room = await getRoom(roomId);
     const user = await UserService.getUserById(userId);
 
-    if(!user) throw Error('User does not exist');
+    if (!user) throw Error("User does not exist");
     room!.users.push(user);
     //TODO make sure the nickname is unique
     await room!.save();
     return room;
-}
+};
 
 export const RoomService = {
     createRoom,
     generateRoomQRCode,
     getRoom,
-    joinRoom
+    joinRoom,
 };
