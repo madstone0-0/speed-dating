@@ -22,7 +22,7 @@ mongoose
 
 const app = new Hono();
 
-app.use('*', cors({
+app.use(cors({
     origin: '*', // Allow all origins (not recommended for production)
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE'], // Specify allowed methods
     allowHeaders: ['Content-Type', 'Authorization'], // Specify allowed headers
