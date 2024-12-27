@@ -6,8 +6,6 @@
 		"module": "NodeNext",
 		"strict": true,
 		"verbatimModuleSyntax": true,
-		"allowImportingTsExtensions": true,
-		"noEmit": false,
 		"skipLibCheck": true,
 		"types": ["node"],
 		"jsx": "react-jsx",

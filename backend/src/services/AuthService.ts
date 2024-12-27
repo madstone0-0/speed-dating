@@ -1,8 +1,8 @@
-import { customLogger } from "../logger.ts";
+import { customLogger } from "../logger.js";
 import { UserModel } from "../models/user.schema.js";
 import type { PromiseReturn, ServiceReturn, SignupUser, User } from "../types.js";
-import { prettyPrint } from "../utils.ts";
-import { UserService } from "./UserService.ts";
+import { prettyPrint } from "../utils.js";
+import { UserService } from "./UserService.js";
 
 class AuthService {
     async SignUp(data: SignupUser): PromiseReturn<User> {
