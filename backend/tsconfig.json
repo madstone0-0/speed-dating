@@ -7,7 +7,7 @@
 		"strict": true,
 		"verbatimModuleSyntax": true,
 		"allowImportingTsExtensions": true,
-		"noEmit": true,
+		"noEmit": false,
 		"skipLibCheck": true,
 		"types": ["node"],
 		"jsx": "react-jsx",
