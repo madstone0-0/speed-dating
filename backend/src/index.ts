@@ -21,7 +21,10 @@ mongoose
     .catch((e) => console.log(`There was an error connecting to the db: ${e}`));
 
 const app = new Hono();
-app.use(logger(customLogger), cors(), compress());
+
+app.use(logger(customLogger), cors({
+    origin: '*'
+}), compress());
 
 app.get("/", (c) => c.json(sendMsg("Backend")));
 

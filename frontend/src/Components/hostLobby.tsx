@@ -46,7 +46,16 @@ export function HostLobby(){
     }
     return (
         <div className="main">
-
+        <div className="qrHolder">
+             <h1> Scan the QR code to join the room!</h1>
+             {qrCodeUrl == ''?
+                <h1>Loading...</h1>
+            :
+                
+                <img src={qrCodeUrl}/>
+             
+            }
+        </div>
         </div>
     );
 }
