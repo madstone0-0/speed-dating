@@ -53,8 +53,8 @@ export function HostLobby() {
                 const matchMessage = {
                     type: SocketMessageTypes.MATCH,
                     roomId,
-                    user1: match[0],
-                    user2: match[1],
+                    user1: match.user1._id,
+                    user2: match.user2._id,
                 };
                 socket.current?.send(JSON.stringify(matchMessage));
             }

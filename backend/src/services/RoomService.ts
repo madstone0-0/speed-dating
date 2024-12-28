@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 import Mongoose from "mongoose";
 import { customLogger } from "../logger.js";
 import { handleServerError, prettyPrint, rng, sendError, ServiceError } from "../utils.js";
-import type { JoinSocketMessage, PromiseReturn } from "../types.js";
+import type { JoinSocketMessage, PromiseReturn, User } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
 
 dotenv.config();
@@ -51,9 +51,7 @@ const getRoom = async (roomId: string) => {
     return room;
 };
 
-const matchRoomMembers = async (
-    roomId: string,
-): PromiseReturn<[mongoose.Types.ObjectId, mongoose.Types.ObjectId][]> => {
+const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; user2: User }[]> => {
     try {
         const room = await getRoom(roomId);
         if (!room) throw new ServiceError("Cannot find room", 404);
@@ -85,11 +83,23 @@ const matchRoomMembers = async (
         }
 
         const mapArray = Array.from(memberMap);
+        let res = [];
+        for (const [m1, m2] of mapArray) {
+            const user1 = await UserService.getUserById(m1.toString());
+            const user2 = await UserService.getUserById(m2.toString());
+            if (!user1 || !user2) {
+                throw new ServiceError("Cannot find user", 404);
+            }
+            res.push({
+                user1: user1,
+                user2: user2,
+            });
+        }
         customLogger(`Matched members for room ${roomId}: ${prettyPrint(mapArray)}`);
 
         return {
             status: 200,
-            data: mapArray,
+            data: res,
         };
     } catch (e) {
         return handleServerError(e, "MatchRoomMembers");
