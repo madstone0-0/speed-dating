@@ -1,0 +1,44 @@
+
+input {
+    border: 5px;
+    border-style: solid;
+    height: 50px;
+    width: 80%;
+    text-align: center;
+    font-size: x-large;
+    font-weight: bolder;
+    margin: 0;
+}
+
+.formDiv{
+    margin: 10px;
+}
+
+.buttonHolder{
+    display: flex;
+    justify-content: center;
+}
+
+.buttonHolder button {
+    margin: 10px;
+}
+
+button {
+    width: 100px;
+    font-weight: bold;
+    border-radius: 0;
+    border: 5px;
+    border-style: solid
+}
+button:hover{
+    color: white;
+    border-color: white;
+    background-color: black;
+}
+
+.buttonClicked {
+    color: white;
+    border-color: white;
+    background-color: black;
+
+}

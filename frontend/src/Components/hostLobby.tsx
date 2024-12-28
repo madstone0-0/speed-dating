@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { API_BASE } from "./constants";
 import "./../styles/lobby.css";
@@ -10,18 +10,19 @@ export function HostLobby() {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
     const [users, setUsers] = useState([]);
-    const socket = new WebSocket(SOCKET_BASE);
+    const socket = useRef<WebSocket | null>();
 
     useEffect(() => {
         createRoom();
     }, []);
 
     useEffect(() => {
-        socket.addEventListener("open", ()=>{
+        socket.current = new WebSocket(SOCKET_BASE);
+        socket.current.addEventListener("open", ()=>{
             console.log('Connection created!');
         });
 
-        socket.addEventListener("message", (event) => {
+        socket.current.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
             console.log('Socket message -> ', data);
             
@@ -30,7 +31,7 @@ export function HostLobby() {
         });
 
         return () => {
-            socket.close();
+            socket.current?.close();
         };
     }, []);
 
@@ -46,9 +47,15 @@ export function HostLobby() {
 
             const data = request.data.data;
             console.log('Create room response -> ', data);
-            const { qrCodeUrl } = data;
+            const { qrCodeUrl, _id } = data;
 
             setQrCodeUrl(qrCodeUrl);
+            socket.current!.send(JSON.stringify(
+                {
+                    type: SocketMessageTypes.HOST,
+                    roomId: _id
+                }
+            ));
         } catch (e: any) {
             setError(true);
             console.log("Error creating room");
@@ -64,7 +71,7 @@ export function HostLobby() {
             <div className="nameHolder">
                 {users.map((u)=>{
                     return (
-                        <h2>{u}</h2>
+                        <h2 key={u}>{u}</h2>
                     );
                 })}
             </div>

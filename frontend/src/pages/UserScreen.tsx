@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { API_BASE, SOCKET_BASE } from "../Components/constants";
 import axios from 'axios';
 import { SocketMessageTypes } from "../Components/constants/sockets";
 import { SocketMessage } from "../types";
+import './../styles/userScreen.css';
 
 export function UserScreen(){
-    const socket = new WebSocket(SOCKET_BASE);
+    const socket = useRef<WebSocket | null>();
     const { roomId } = useParams();
     const [joinedRoomBackend, setJoinedRoomBackend] = useState(false)
     const [joinedRoom, setJoinedRoom] = useState(false);
@@ -20,7 +21,7 @@ export function UserScreen(){
 
     const signUp = async ()=>{
         try {
-            if(!validate()){
+            if(validate()){
                 alert('Fill the form completely!');
                 return;
             }
@@ -61,16 +62,18 @@ export function UserScreen(){
     }
 
     useEffect(()=>{
+        
         //check if a user is in the room already
         //need an endpoint for this
     }, []);
 
     useEffect(()=>{
-        socket.addEventListener('open', ()=>{
+        socket.current = new WebSocket(SOCKET_BASE);
+        socket.current.addEventListener('open', ()=>{
             console.log('User socket connection created');
         });
 
-        socket.addEventListener('message', (event)=>{
+        socket.current.addEventListener('message', (event)=>{
             const data = JSON.parse(event.data);
             console.log('Socket message -> ', data);
 
@@ -86,24 +89,27 @@ export function UserScreen(){
     useEffect(()=>{
         //if the user has joined the room on the backend
         //we can send the socket joining message
-        const message: SocketMessage = {
-            type: SocketMessageTypes.JOIN_NOTIFICATION,
-            roomId: roomId!,
-        };
-        socket.send(JSON.stringify(message));
+        if(joinedRoomBackend){
+            const message: SocketMessage = {
+                type: SocketMessageTypes.JOIN_NOTIFICATION,
+                roomId: roomId!,
+            };
+            socket.current!.send(JSON.stringify(message));
+        }
+            
     }, [joinedRoomBackend]);
 
 
     const submitFormJoinRoom = async()=>{
         await signUp();
-        joinRoom();
+        await joinRoom();
     }
 
     return (
         <>
-            {joinedRoom ? (
-                <div>
-                    <div>
+            {!joinedRoom ? (
+                <div className="main">
+                    <div className="formDiv">
                         <h1>Enter your nickname!</h1>
                         <input onChange={(e) => setNickname(e.target.value)} />
                     </div>

@@ -6,6 +6,7 @@ import { SocketService } from "../services/SocketService.js";
 import { customLogger } from "../logger.js";
 import { prettyJSON } from "hono/pretty-json";
 import { prettyPrint } from "../utils.js";
+import type { WSContext } from "hono/ws";
 
 const ws = new Hono();
 
@@ -15,7 +16,7 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app: ws });
 const roomToUsersMap = new Map<string, WebSocket[]>();
 
 //map from the roomId to the host socket
-const roomToHostmap = new Map<string, WebSocket>();
+const roomToHostmap = new Map<string, WSContext<unknown>>();
 
 ws.get(
     "/ws",
@@ -31,6 +32,12 @@ ws.get(
                 const { type, roomId, userId } = message;
 
                 if (type == MessageTypes.JOIN_NOTIFICATION) SocketService.handleJoinRoomMessage(roomId!, userId!, roomToHostmap);
+                if (type == MessageTypes.HOST){
+                    roomToHostmap.set(roomId, socket);
+                    socket.send(JSON.stringify({
+                        message: 'Host socket set'
+                    }));
+                }
             } catch (e) {
                 customLogger(`Error on message -> ${e}`);
             }

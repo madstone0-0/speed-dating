@@ -30,7 +30,7 @@ export interface User extends Identified {
 }
 
 export interface Room extends Identified {
-    users: string[] | Mongoose.Types.ObjectId[];
+    users: Mongoose.Types.ObjectId[];
     hostId: string | Mongoose.Types.ObjectId;
     conversationTime: number; //this is in seconds
     matchSetting: string;

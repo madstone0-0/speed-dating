@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import * as dotenv from "dotenv";
 import { CloudinaryService } from "./CloudinaryService.js";
 import { UserService } from "./UserService.js";
+import mongoose from 'mongoose';
 
 dotenv.config();
 const domain = process.env.DOMAIN! as string;
@@ -47,10 +48,8 @@ const getRoom = async (roomId: string) => {
 
 const joinRoom = async (userId: string, roomId: string) => {
     const room = await getRoom(roomId);
-    const user = await UserService.getUserById(userId);
 
-    if (!user) throw Error("User does not exist");
-    room!.users.push(user);
+    room!.users.push(new mongoose.Types.ObjectId(userId));
     //TODO make sure the nickname is unique
     await room!.save();
     return room;
