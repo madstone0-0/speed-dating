@@ -11,6 +11,7 @@ export interface ServiceReturn<Data = any> {
 
 export interface SignupUser {
     nickname: string;
+    gender?: string,
     host?: boolean;
 }
 
@@ -24,11 +25,12 @@ export interface Identified {
 
 export interface User extends Identified {
     nickname: string;
+    gender: string,
     host: boolean;
 }
 
 export interface Room extends Identified {
-    users: User[];
+    users: string[] | Mongoose.Types.ObjectId[];
     hostId: string | Mongoose.Types.ObjectId;
     conversationTime: number; //this is in seconds
     matchSetting: string;
@@ -50,6 +52,5 @@ export interface Answer extends Identified {
 export interface SocketMessage {
     type: string;
     roomId: string;
-    userNickname?: string;
-    userId?: string;
+    users?: string[]; //just a list of users in a room
 }

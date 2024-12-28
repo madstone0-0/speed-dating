@@ -3,6 +3,7 @@ import axios from "axios";
 import { API_BASE } from "./constants";
 import "./../styles/lobby.css";
 import { SOCKET_BASE } from "./constants";
+import { SocketMessageTypes } from "./constants/sockets";
 
 axios.defaults.withCredentials = true;
 export function HostLobby() {
@@ -20,8 +21,12 @@ export function HostLobby() {
             console.log('Connection created!');
         });
 
-        socket.addEventListener("message", () => {
-
+        socket.addEventListener("message", (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Socket message -> ', data);
+            
+            const { type, users } = data;
+            if(type == SocketMessageTypes.JOINED) setUsers(users);
         });
 
         return () => {

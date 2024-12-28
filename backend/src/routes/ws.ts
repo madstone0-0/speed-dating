@@ -30,7 +30,7 @@ ws.get(
                 const message = JSON.parse(event.data.toString());
                 const { type, roomId, userId } = message;
 
-                if (type == MessageTypes.JOIN) SocketService.handleJoinRoomMessage(roomId!, userId!, roomToHostmap);
+                if (type == MessageTypes.JOIN_NOTIFICATION) SocketService.handleJoinRoomMessage(roomId!, userId!, roomToHostmap);
             } catch (e) {
                 customLogger(`Error on message -> ${e}`);
             }
