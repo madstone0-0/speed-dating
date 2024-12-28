@@ -1,6 +1,7 @@
 export const enum SocketMessageTypes {
-    JOIN_NOTIFICATION = 'JOIN_NOTIFICATION',
-    JOINED = 'JOINED',
-    MATCH = 'MATCH',
-    HOST = 'HOST'
+    JOIN_NOTIFICATION = "JOIN_NOTIFICATION",
+    JOINED = "JOINED",
+    MATCH = "MATCH",
+    MATCHED = "MATCHED",
+    HOST = "HOST",
 }
