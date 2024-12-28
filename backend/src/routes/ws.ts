@@ -1,13 +1,6 @@
 import { Hono } from "hono";
 import { createNodeWebSocket } from "@hono/node-ws";
-import type {
-    BaseSocketMessage,
-    JoinSocketMessage,
-    MatchSocketMessage,
-    RoomSocketMessage,
-    RoomUserMap,
-    SocketMessage,
-} from "../types.js";
+import type { BaseSocketMessage, JoinSocketMessage, MatchSocketMessage, RoomSocketMessage } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
 import { SocketService } from "../services/SocketService.js";
 import { customLogger } from "../logger.js";
