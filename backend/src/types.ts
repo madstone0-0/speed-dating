@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { StatusCode } from "hono/utils/http-status";
 import Mongoose from "mongoose";
+import { MessageTypes } from "./constants/socketMessage.js";
 
 export interface ServiceReturn<Data = any> {
     status: number & StatusCode;
@@ -11,7 +12,7 @@ export interface ServiceReturn<Data = any> {
 
 export interface SignupUser {
     nickname: string;
-    gender?: string,
+    gender?: string;
     host?: boolean;
 }
 
@@ -25,7 +26,7 @@ export interface Identified {
 
 export interface User extends Identified {
     nickname: string;
-    gender: string,
+    gender: string;
     host: boolean;
 }
 
@@ -49,8 +50,25 @@ export interface Answer extends Identified {
     index: number; //index of the answer chosen
 }
 
+export interface BaseSocketMessage {
+    type: MessageTypes;
+}
+
+export type RoomSocketMessage = BaseSocketMessage & {
+    roomId: string;
+};
+
+export type MatchSocketMessage = RoomSocketMessage & {
+    user1: string;
+    user2: string;
+};
+
+export type JoinSocketMessage = RoomSocketMessage & {
+    userId: string;
+};
+
 export interface SocketMessage {
-    type: string;
+    type: MessageTypes;
     roomId: string;
     users?: string[]; //just a list of users in a room
 }

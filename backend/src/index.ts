@@ -45,11 +45,11 @@ app.route("/auth", auth);
 app.route("/", ws);
 app.route("/room", room);
 
-const port = parseInt(process.env.PORT!);
-console.log(`Server is running on http://localhost:${port}`);
+export const PORT = parseInt(process.env.PORT!);
+console.log(`Server is running on http://localhost:${PORT}`);
 
 const server = serve({
     fetch: app.fetch,
-    port,
+    port: PORT,
 });
 injectWebSocket(server);

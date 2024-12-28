@@ -16,12 +16,20 @@ const handleJoinRoomMessage = async (roomId: string, userId: string, roomToHostM
     const message: SocketMessage = {
         type: MessageTypes.JOINED,
         roomId: roomId,
-        users: userNicknames
+        users: userNicknames,
     };
 
     socket.send(JSON.stringify(message));
 };
 
+const handleRoomMatch = async (
+    roomId: string,
+    user1: string,
+    user2: string,
+    roomToUsersMap: Map<string, (string | WSContext)[]>,
+) => {};
+
 export const SocketService = {
     handleJoinRoomMessage,
+    handleRoomMatch,
 };

@@ -39,3 +39,7 @@ export const handleServerError = (error: unknown, message: string): ServiceRetur
     console.error(`${message} error: ${err.stack}`);
     return { status: err.status, data: { err: err.message } };
 };
+
+export const rng = (max: number, min: number = 0) => {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+};
