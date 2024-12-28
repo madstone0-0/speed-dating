@@ -64,12 +64,10 @@ ws.get(
                         break;
                     case MessageTypes.JOINED:
                         const { roomId, userId } = message as JoinSocketMessage;
-                        if (roomToUsersMap.has(roomId)) {
-                            const users = roomToUsersMap.get(roomId);
-                            users!.set(userId, socket);
-                        } else {
-                            roomToUsersMap.set(roomId, new Map([[userId, socket]]));
-                        }
+                        const users = roomToUsersMap.get(roomId) ?? new Map();
+                        users.set(userId, socket);
+                        roomToUsersMap.set(roomId, users);
+                        customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
                         customLogger(`User: ${userId} added to room ${roomId}`);
                         break;
                 }

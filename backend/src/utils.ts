@@ -11,7 +11,16 @@ export const sendError = <T>(err: T) => ({ data: { err: err } });
 export const sendSR = <T>(c: Context, res: ServiceReturn<T>) => c.json(sendData(res.data), res.status);
 
 export const prettyPrint = <T>(log: T) => {
-    return JSON.stringify(log, undefined, 4);
+    return JSON.stringify(
+        log,
+        (key, value) => {
+            if (value instanceof Map) {
+                return `Map<${typeof value.values()}, ${typeof value.keys()}>`;
+            }
+            return value;
+        },
+        4,
+    );
 };
 
 export class ServiceError extends Error {

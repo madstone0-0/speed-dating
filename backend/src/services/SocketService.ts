@@ -45,7 +45,11 @@ const handleRoomMatch = async (
     // roomToUsersMap: Map<string, (string | WSContext<unknown>)[]>,
 ) => {
     const userSockets = roomToUsersMap.get(roomId);
-    if (!userSockets) return;
+    if (!userSockets) {
+        customLogger(`User sockets ${userSockets}`);
+        customLogger("Found no room sockets");
+        return;
+    }
     const user1Sock = userSockets.get(user1);
     const user2Sock = userSockets.get(user2);
     const user1Msg = genMatchMsg(user1, user2);

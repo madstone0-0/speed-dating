@@ -52,6 +52,7 @@ export function HostLobby() {
             for (const match of matches) {
                 const matchMessage = {
                     type: SocketMessageTypes.MATCH,
+                    roomId,
                     user1: match[0],
                     user2: match[1],
                 };
