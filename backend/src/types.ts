@@ -2,6 +2,7 @@
 import type { StatusCode } from "hono/utils/http-status";
 import Mongoose from "mongoose";
 import { MessageTypes } from "./constants/socketMessage.js";
+import type { WSContext } from "hono/ws";
 
 export interface ServiceReturn<Data = any> {
     status: number & StatusCode;

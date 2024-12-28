@@ -4,13 +4,12 @@ import QRCode from "qrcode";
 import * as dotenv from "dotenv";
 import { CloudinaryService } from "./CloudinaryService.js";
 import { UserService } from "./UserService.js";
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import Mongoose from "mongoose";
 import { customLogger } from "../logger.js";
-import { prettyPrint, rng } from "../utils.js";
-import type { JoinSocketMessage } from "../types.js";
+import { handleServerError, prettyPrint, rng, sendError, ServiceError } from "../utils.js";
+import type { JoinSocketMessage, PromiseReturn } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
-import { PORT } from "../index.js";
-import mongoose from 'mongoose';
 
 dotenv.config();
 const domain = process.env.DOMAIN! as string;
@@ -52,33 +51,50 @@ const getRoom = async (roomId: string) => {
     return room;
 };
 
-const matchRoomMembers = async (roomId: string) => {
-    const room = await getRoom(roomId);
-    if (!room) return null;
+const matchRoomMembers = async (
+    roomId: string,
+): PromiseReturn<[mongoose.Types.ObjectId, mongoose.Types.ObjectId][]> => {
+    try {
+        const room = await getRoom(roomId);
+        if (!room) throw new ServiceError("Cannot find room", 404);
 
-    const members: string[] = [...room.users] as string[];
-    const memberMap = new Map<string, string>();
-    customLogger(`Members: ${prettyPrint(members)}`);
+        const members = [...room.users];
+        const memberMap = new Map<Mongoose.Types.ObjectId, Mongoose.Types.ObjectId>();
+        customLogger(`Members: ${prettyPrint(members)}`);
 
-    // Shuffle using Fisher-Yates
-    for (let i = members.length - 1; i >= 0; i--) {
-        const j = rng(i);
-        [members[i], members[j]] = [members[j], members[i]];
+        // Split into male and femail
+        const users = await Promise.all(members.map((m) => UserService.getUserById(m._id.toString())));
+        const male = users.filter((m) => m!.gender == "MALE").map((u) => u!._id);
+        const female = users.filter((m) => m!.gender == "FEMALE").map((u) => u!._id);
+
+        // Shuffle using Fisher-Yates
+        for (let i = male.length - 1; i >= 0; i--) {
+            const j = rng(i);
+            [male[i], male[j]] = [male[j], male[i]];
+        }
+
+        for (let i = female.length - 1; i >= 0; i--) {
+            const j = rng(i);
+            [female[i], female[j]] = [female[j], female[i]];
+        }
+
+        // Match consecutive pairs
+        for (let i = 0; i < Math.min(male.length, female.length); i++) {
+            customLogger(`Matching ${male[i]} with ${female[i]}`);
+            memberMap.set(male[i], female[i]);
+        }
+
+        const mapArray = Array.from(memberMap);
+        customLogger(`Matched members for room ${roomId}: ${prettyPrint(mapArray)}`);
+
+        return {
+            status: 200,
+            data: mapArray,
+        };
+    } catch (e) {
+        return handleServerError(e, "MatchRoomMembers");
     }
-
-    // Match consecutive pairs
-    for (let i = 0; i < members.length; i += 2) {
-        customLogger(`Matching ${members[i]} with ${members[i + 1]}`);
-        memberMap.set(members[i], members[i + 1] ? members[i + 1] : "");
-    }
-
-    const mapArray = Array.from(memberMap);
-    customLogger(`Matched members for room ${roomId}: ${prettyPrint(mapArray)}`);
-
-    return mapArray;
 };
-
-const sendMatches = async (matches: [string, string][]) => {};
 
 const joinRoom = async (userId: string, roomId: string) => {
     const room = await getRoom(roomId);
@@ -86,11 +102,6 @@ const joinRoom = async (userId: string, roomId: string) => {
     room!.users.push(new mongoose.Types.ObjectId(userId));
     //TODO make sure the nickname is unique
     await room!.save();
-    const sockMessage: JoinSocketMessage = {
-        type: MessageTypes.JOINED,
-        roomId,
-        userId,
-    };
     return room;
 };
 

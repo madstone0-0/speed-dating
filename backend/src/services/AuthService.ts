@@ -10,7 +10,7 @@ class AuthService {
         if (existingUser) {
             const updateRes = await UserModel.updateOne(
                 { _id: existingUser._id },
-                { host: data.host, nickname: existingUser.nickname },
+                { host: data.host, nickname: existingUser.nickname, gender: data.gender },
             );
             customLogger(`Updated user ${existingUser._id} info: ${prettyPrint(updateRes)}`);
             existingUser = await UserService.getUserById(existingUser._id.toString());

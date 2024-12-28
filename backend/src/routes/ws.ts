@@ -1,22 +1,29 @@
 import { Hono } from "hono";
 import { createNodeWebSocket } from "@hono/node-ws";
-import type { BaseSocketMessage, JoinSocketMessage, MatchSocketMessage, SocketMessage } from "../types.js";
+import type {
+    BaseSocketMessage,
+    JoinSocketMessage,
+    MatchSocketMessage,
+    RoomSocketMessage,
+    RoomUserMap,
+    SocketMessage,
+} from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
 import { SocketService } from "../services/SocketService.js";
 import { customLogger } from "../logger.js";
-import { prettyJSON } from "hono/pretty-json";
 import { prettyPrint } from "../utils.js";
-import type { WSContext } from "hono/ws";
+import { WSContext } from "hono/ws";
 
 const ws = new Hono();
 
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app: ws });
 
 //map from the roomId to all the room sockets for that room
-const roomToUsersMap = new Map<string, (string | WSContext)[]>();
+// const roomToUsersMap = new Map<string, (string | WSContext<unknown>)[]>();
+const roomToUsersMap = new Map<string, Map<string, WSContext>>();
 
 //map from the roomId to the host socket
-const roomToHostmap = new Map<string, WSContext<unknown>>();
+const roomToHostmap = new Map<string, WSContext>();
 
 ws.get(
     "/ws",
@@ -45,21 +52,23 @@ ws.get(
                         }
                         break;
                     case MessageTypes.HOST:
-                    {
-                    roomToHostmap.set(roomId, socket);
-                    socket.send(JSON.stringify({
-                        message: 'Host socket set'
-                    }));
-                    }
-                    break;
+                        {
+                            const { roomId } = message as RoomSocketMessage;
+                            roomToHostmap.set(roomId, socket);
+                            socket.send(
+                                JSON.stringify({
+                                    message: "Host socket set",
+                                }),
+                            );
+                        }
+                        break;
                     case MessageTypes.JOINED:
                         const { roomId, userId } = message as JoinSocketMessage;
                         if (roomToUsersMap.has(roomId)) {
                             const users = roomToUsersMap.get(roomId);
-                            users!.push(userId, socket);
+                            users!.set(userId, socket);
                         } else {
-                            const userSocket = [userId, socket];
-                            roomToUsersMap.set(roomId, userSocket);
+                            roomToUsersMap.set(roomId, new Map([[userId, socket]]));
                         }
                         customLogger(`User: ${userId} added to room ${roomId}`);
                         break;

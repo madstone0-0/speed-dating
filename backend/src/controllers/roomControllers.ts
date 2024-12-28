@@ -44,11 +44,8 @@ const joinRoom = async (c: Context) => {
 const matchMembers = async (c: Context) => {
     try {
         const { roomId } = c.req.param();
-        const matches = await RoomService.matchRoomMembers(roomId);
-        return sendSR(c, {
-            status: 200,
-            ...sendData({ matches }),
-        });
+        const sr = await RoomService.matchRoomMembers(roomId);
+        return sendSR(c, sr);
     } catch (e) {
         console.log(`There was an error matching the members -> ${e}`);
         return c.json(

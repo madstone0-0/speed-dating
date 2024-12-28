@@ -14,12 +14,13 @@ const signupValidator = zValidator(
     "json",
     z.object({
         nickname: z.string(),
+        gender: z.string().optional(),
         host: z.boolean().optional(),
     }),
 );
 
 auth.post("/signup", signupValidator, async (c) => {
-    try{
+    try {
         const validated = c.req.valid("json");
         const res = await AuthService.SignUp(validated);
         const cookie = getCookie(c, "userId");
@@ -31,12 +32,12 @@ auth.post("/signup", signupValidator, async (c) => {
             maxAge: 7200, //expires after 2 hours
         });
         return sendSR(c, res);
-    }catch(e: any){
-        console.log('There was an error signing up -> ', e);
+    } catch (e: any) {
+        console.log("There was an error signing up -> ", e);
         return sendSR(c, {
             status: 500,
-            message: 'There was an error signing up!'
-        })
+            message: "There was an error signing up!",
+        });
     }
 });
 
