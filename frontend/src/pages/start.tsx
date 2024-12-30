@@ -3,6 +3,7 @@ import "./../styles/start.css";
 import axios from "axios";
 import { API_BASE } from "../Components/constants";
 import { HostLobby } from "../Components/hostLobby";
+import { v4 } from 'uuid';
 
 export function Start() {
     const [loading, setLoading] = useState(false);
@@ -12,7 +13,7 @@ export function Start() {
         try {
             setLoading(true);
             const request = await axios.post(`${API_BASE}/auth/signup`, {
-                nickname: "host",
+                nickname: v4(),
                 host: true,
             });
             if (request.status == 200) setUserCreated(true);
