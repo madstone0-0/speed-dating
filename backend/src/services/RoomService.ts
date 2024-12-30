@@ -91,57 +91,70 @@ const getRoom = async (roomId: string) => {
     return room;
 };
 
-const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; user2: User }[]> => {
+const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; user2: User | null}[][]> => {
     try {
         const room = await getRoom(roomId);
         if (!room) throw new ServiceError("Cannot find room", 404);
 
         const members = [...room.users];
-        const memberMap = new Map<Mongoose.Types.ObjectId, Mongoose.Types.ObjectId>();
-        //maaps users to their matches
+        const memberMap = new Map<Mongoose.Types.ObjectId, Set<Mongoose.Types.ObjectId>>();
+        //keeps track of all the person that a certain guy has been matched to
+
         customLogger(`Members: ${prettyPrint(members)}`);
 
-        // Split into male and femail
+        // Split into male and female
         const users = await Promise.all(members.map((m) => UserService.getUserById(m._id.toString())));
         const male = users.filter((m) => m!.gender == Gender.MALE).map((u) => u!._id);
         const female = users.filter((m) => m!.gender == Gender.FEMALE).map((u) => u!._id);
 
-        // Shuffle using Fisher-Yates
-        for (let i = male.length - 1; i >= 0; i--) {
-            const j = rng(i);
-            [male[i], male[j]] = [male[j], male[i]];
-        }
+        const roundMatches = [];
 
-        for (let i = female.length - 1; i >= 0; i--) {
-            const j = rng(i);
-            [female[i], female[j]] = [female[j], female[i]];
-        }
+        const round = Math.max(male.length, female.length);
+        for(let i = 0; i<round; ++i){
+            const matched = new Set<Mongoose.Types.ObjectId>();
+            //keeps track of all the people that have been matched so far in this round
+            const matches = [];
+            for(let j = 0; j<male.length; ++j){
+                //hella patriarchal... my bad - Tani
+                let femaleIndex = 0;
+                let foundMatch;
+                if(!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
 
-        // Match consecutive pairs
-        for (let i = 0; i < Math.min(male.length, female.length); i++) {
-            customLogger(`Matching ${male[i]} with ${female[i]}`);
-            memberMap.set(male[i], female[i]);
-        }
-        //need to change this to ensure that people don't get matched to people that've been matched with before
+                while(
+                    memberMap.get(male[j])!.has(female[femaleIndex]) ||
+                    matched.has(female[femaleIndex])
+                ){
+                    femaleIndex++;
+                    if(femaleIndex == female.length) break;
+                }
 
-        const mapArray = Array.from(memberMap);
-        let res = [];
-        for (const [m1, m2] of mapArray) {
-            const user1 = await UserService.getUserById(m1.toString());
-            const user2 = await UserService.getUserById(m2.toString());
-            if (!user1 || !user2) {
-                throw new ServiceError("Cannot find user", 404);
+                foundMatch = (femaleIndex < female.length)? female[femaleIndex] : undefined; 
+                const user1 = await UserService.getUserById(male[j].toString());
+                const user2 = (foundMatch) ? await UserService.getUserById(foundMatch!.toString()) :  null;
+                matches.push({
+                    user1: user1!, 
+                    user2: user2
+                });
+                if (foundMatch){
+                    //if we have a match
+                    //add to the list of matches for the person and the list of matches for that round
+                    matched.add(foundMatch);
+                    memberMap.get(male[j])!.add(foundMatch);
+                }
+                
             }
-            res.push({
-                user1: user1,
-                user2: user2,
-            });
+            roundMatches.push(matches);
         }
-        customLogger(`Matched members for room ${roomId}: ${prettyPrint(mapArray)}`);
+
+        customLogger(`Matched members for room ${roomId}: ${prettyPrint(roundMatches)}`);
+        
+        //roundMatches looks like 
+        // 0 - [[a0,b0], [a1,b1]]
+        //1 - [[a0,b1], [a1, b0]]
 
         return {
             status: 200,
-            data: res,
+            data: roundMatches,
         };
     } catch (e) {
         return handleServerError(e, "MatchRoomMembers");

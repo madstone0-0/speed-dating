@@ -11,13 +11,13 @@ export function HostLobby() {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
     const [users, setUsers] = useState([]);
-    const [numMatches, setNumMatches] = useState(0);
+    const [round, setRound] = useState(0);
     const [roomId, setRoomId] = useState("");
     const socket = useRef<WebSocket | null>();
     const maxMatches = useRef(0);
     const [sessionStart, setSessionStart] = useState(false);
 
-    const getAndSendMatches = async (roomId: string) => {
+    const getMatches = async (roomId: string) => {
         try {
             const res = await axios.post(`${API_BASE}/room/match/${roomId}`);
 
@@ -27,9 +27,23 @@ export function HostLobby() {
                 return;
             }
 
-            const matches = res.data.data;
-            console.log({ matches });
-            for (const match of matches) {
+            const response = res.data.data;
+            maxMatches.current = response.length;
+            console.log({ response });
+            localStorage.setItem('matches', JSON.stringify(response));
+            return response;
+        } catch (e) {
+            console.error({ e });
+        }
+    };
+
+    const SendMatches = async (roomId: string) => {
+        try {
+            const matches = JSON.parse(localStorage.getItem('matches')!);
+            const matchesForRound = matches![round];
+            console.log('matches for round -> ', matchesForRound);
+
+            for (const match of matchesForRound) {
                 const matchMessage = {
                     type: SocketMessageTypes.MATCH,
                     roomId,
@@ -44,6 +58,7 @@ export function HostLobby() {
                 duration: 75,//for test purposes
             };
             socket.current?.send(JSON.stringify(timerMessage));
+            console.log(`Matches for round ${round} sent`)
             return matches;
         } catch (e) {
             console.error({ e });
@@ -76,9 +91,11 @@ export function HostLobby() {
                     break;
                 case SocketMessageTypes.TIMER_DONE:
                     {
-                        if (numMatches < maxMatches.current) {
-                            getAndSendMatches(roomId).catch(console.error);
-                            setNumMatches(numMatches + 1);
+                        if (round < maxMatches.current - 1) {
+                            //indexing from 0 to max - 1
+                            setRound(round + 1);
+                            SendMatches(roomId).catch(console.error);
+                            
                             console.log("Auto rematching");
                         } else {
                             console.log("No more auto rematching");
@@ -100,8 +117,8 @@ export function HostLobby() {
     const handleMatch: MouseEventHandler = async (e) => {
         e.preventDefault();
         if (users.length === 0) return;
-        const matches = await getAndSendMatches(roomId);
-        setNumMatches(numMatches + 1);
+        await getMatches(roomId);
+        SendMatches(roomId);
         setSessionStart(true);
     };
 
