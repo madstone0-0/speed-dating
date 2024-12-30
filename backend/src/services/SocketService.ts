@@ -65,11 +65,11 @@ const handleTimerStart = async (
         const message: TickSocketMessage = {
             type: MessageTypes.TICK,
             roomId,
-            timeLeft,
+            timeLeft: timeLeft*1000,//working in miliseconds 
         };
-        socket.send(JSON.stringify(message));
+        socket.send(JSON.stringify(message)); //sending to the host
         for (const sock of sockets) {
-            sock.send(JSON.stringify(message));
+            sock.send(JSON.stringify(message)); //sending to all other people in the room
         }
         roomToTimerMap.set(roomId, [timeLeft, timer]);
         if (timeLeft === 0) {

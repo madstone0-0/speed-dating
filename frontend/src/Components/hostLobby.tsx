@@ -4,6 +4,7 @@ import { API_BASE } from "./constants";
 import "./../styles/lobby.css";
 import { SOCKET_BASE } from "./constants";
 import { SocketMessageTypes } from "./constants/sockets";
+import { Timer } from "./timer";
 
 axios.defaults.withCredentials = true;
 export function HostLobby() {
@@ -14,6 +15,7 @@ export function HostLobby() {
     const [roomId, setRoomId] = useState("");
     const socket = useRef<WebSocket | null>();
     const maxMatches = useRef(0);
+    const [sessionStart, setSessionStart] = useState(false);
 
     const getAndSendMatches = async (roomId: string) => {
         try {
@@ -39,7 +41,7 @@ export function HostLobby() {
             const timerMessage = {
                 type: SocketMessageTypes.TIMER_START,
                 roomId,
-                duration: 60,
+                duration: 75,//for test purposes
             };
             socket.current?.send(JSON.stringify(timerMessage));
             return matches;
@@ -100,6 +102,7 @@ export function HostLobby() {
         if (users.length === 0) return;
         const matches = await getAndSendMatches(roomId);
         setNumMatches(numMatches + 1);
+        setSessionStart(true);
     };
 
     const createRoom = async () => {
@@ -133,16 +136,28 @@ export function HostLobby() {
     };
     return (
         <div className="main">
-            <div className="qrHolder">
-                <h1> Scan the QR code to join the room!</h1>
-                {qrCodeUrl == "" ? <h1>Loading...</h1> : <img src={qrCodeUrl} />}
-            </div>
-            <div className="nameHolder">
-                {users.map((u) => {
-                    return <h2 key={u}>{u}</h2>;
-                })}
-            </div>
-            <button onClick={handleMatch}>Match</button>
+        {!sessionStart ?
+            (
+                <>
+                    <div className="qrHolder">
+                        <h1> Scan the QR code to join the room!</h1>
+                        {qrCodeUrl == "" ? <h1>Loading...</h1> : <img src={qrCodeUrl} />}
+                    </div>
+                    <div className="nameHolder">
+                        {users.map((u) => {
+                        return <h2 key={u}>{u}</h2>;
+                        })}
+                    </div>
+                    
+                    <button onClick={handleMatch}>Match</button>
+                </>
+                )
+            :
+            (
+                <>
+                <Timer socket={socket.current!} time={157000} />
+                </>
+            )}
         </div>
     );
 }

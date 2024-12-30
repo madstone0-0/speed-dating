@@ -10,6 +10,7 @@ import { customLogger } from "../logger.js";
 import { handleServerError, prettyPrint, rng, sendError, ServiceError } from "../utils.js";
 import type { JoinSocketMessage, PromiseReturn, Room, User } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
+import { Gender } from "../constants/user.js";
 
 dotenv.config();
 const domain = process.env.DOMAIN! as string;
@@ -97,12 +98,13 @@ const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; us
 
         const members = [...room.users];
         const memberMap = new Map<Mongoose.Types.ObjectId, Mongoose.Types.ObjectId>();
+        //maaps users to their matches
         customLogger(`Members: ${prettyPrint(members)}`);
 
         // Split into male and femail
         const users = await Promise.all(members.map((m) => UserService.getUserById(m._id.toString())));
-        const male = users.filter((m) => m!.gender == "MALE").map((u) => u!._id);
-        const female = users.filter((m) => m!.gender == "FEMALE").map((u) => u!._id);
+        const male = users.filter((m) => m!.gender == Gender.MALE).map((u) => u!._id);
+        const female = users.filter((m) => m!.gender == Gender.FEMALE).map((u) => u!._id);
 
         // Shuffle using Fisher-Yates
         for (let i = male.length - 1; i >= 0; i--) {
@@ -120,6 +122,7 @@ const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; us
             customLogger(`Matching ${male[i]} with ${female[i]}`);
             memberMap.set(male[i], female[i]);
         }
+        //need to change this to ensure that people don't get matched to people that've been matched with before
 
         const mapArray = Array.from(memberMap);
         let res = [];
@@ -155,7 +158,7 @@ const joinRoom = async (userId: string, roomId: string) => {
     }
 
     room!.users.push(new mongoose.Types.ObjectId(userId));
-    //TODO make sure the nickname is unique
+    //TODO make sure the nickname is unique in a room
     await room!.save();
     return room;
 };
