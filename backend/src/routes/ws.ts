@@ -1,6 +1,14 @@
 import { Hono } from "hono";
 import { createNodeWebSocket } from "@hono/node-ws";
-import type { BaseSocketMessage, JoinSocketMessage, MatchSocketMessage, RoomSocketMessage } from "../types.js";
+import type {
+    BaseSocketMessage,
+    JoinSocketMessage,
+    MatchSocketMessage,
+    RoomSocketMessage,
+    TickSocketMessage,
+    TimerDoneMessage,
+    TimerStartMessage,
+} from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
 import { SocketService } from "../services/SocketService.js";
 import { customLogger } from "../logger.js";
@@ -17,6 +25,8 @@ const roomToUsersMap = new Map<string, Map<string, WSContext>>();
 
 //map from the roomId to the host socket
 const roomToHostmap = new Map<string, WSContext>();
+
+const roomToTimerMap = new Map<string, [number, NodeJS.Timeout | undefined]>();
 
 ws.get(
     "/ws",
@@ -56,12 +66,45 @@ ws.get(
                         }
                         break;
                     case MessageTypes.JOINED:
-                        const { roomId, userId } = message as JoinSocketMessage;
-                        const users = roomToUsersMap.get(roomId) ?? new Map();
-                        users.set(userId, socket);
-                        roomToUsersMap.set(roomId, users);
-                        customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
-                        customLogger(`User: ${userId} added to room ${roomId}`);
+                        {
+                            const { roomId, userId } = message as JoinSocketMessage;
+                            const users = roomToUsersMap.get(roomId) ?? new Map();
+                            users.set(userId, socket);
+                            roomToUsersMap.set(roomId, users);
+                            customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
+                            customLogger(`User: ${userId} added to room ${roomId}`);
+                        }
+                        break;
+                    case MessageTypes.TIMER_START:
+                        {
+                            const { roomId, duration } = message as TimerStartMessage;
+                            SocketService.handleTimerStart(
+                                roomId,
+                                duration,
+                                roomToHostmap,
+                                roomToTimerMap,
+                                roomToUsersMap,
+                            );
+                            customLogger(`Timer for ${roomId} started with duration ${duration}s`);
+                        }
+                        break;
+                    case MessageTypes.TICK:
+                        {
+                            const { roomId, timeLeft } = message as TickSocketMessage;
+                            customLogger(`Room ${roomId} time left: ${timeLeft}`);
+                        }
+                        break;
+                    case MessageTypes.TIMER_DONE: // FIX: TIMER_DONE from handleTimerStart is not actually hitting this
+                        {
+                            const { roomId } = message as TimerDoneMessage;
+                            const timer = roomToTimerMap.get(roomId)![1];
+                            if (!timer) customLogger(`Failed to clear timer for room ${roomId}`);
+                            else {
+                                customLogger(`Finished timer ${roomId}`);
+                                clearInterval(timer);
+                            }
+                            roomToTimerMap.delete(roomId);
+                        }
                         break;
                 }
             } catch (e) {

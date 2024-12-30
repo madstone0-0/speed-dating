@@ -8,33 +8,72 @@ import mongoose from "mongoose";
 import Mongoose from "mongoose";
 import { customLogger } from "../logger.js";
 import { handleServerError, prettyPrint, rng, sendError, ServiceError } from "../utils.js";
-import type { JoinSocketMessage, PromiseReturn, User } from "../types.js";
+import type { JoinSocketMessage, PromiseReturn, Room, User } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
 
 dotenv.config();
 const domain = process.env.DOMAIN! as string;
+
+const getUserRooms = async (hostId: string): PromiseReturn<{ rooms: Room[] }> => {
+    try {
+        const rooms = await RoomModel.find({ hostId }).sort("createdAt");
+        if (!rooms || rooms.length === 0) throw new ServiceError("No rooms found create by this user", 404);
+        return {
+            status: 200,
+            data: {
+                rooms,
+            },
+        };
+    } catch (e) {
+        return handleServerError(e, "GetUserRooms");
+    }
+};
 
 const createRoom = async (
     hostId: string,
     conversationTime?: number,
     matchSetting?: string,
     genderMatching?: boolean,
-) => {
-    const room = await RoomModel.create({
-        users: [],
-        hostId: hostId,
-        conversationTime: conversationTime,
-        matchSetting: matchSetting,
-        genderMatching: genderMatching,
-    });
+): PromiseReturn<{ room: Room }> => {
+    try {
+        // Temp fix for room creation on refresh
+        /*
+        const createdRooms = await getUserRooms(hostId);
+        if (createdRooms.status === 200) {
+            const room = createdRooms.data?.rooms[0]!;
+            return {
+                status: 201,
+                data: {
+                    room,
+                },
+            };
+        }
+        customLogger(`No existing room for ${hostId} creating new room`);
+        */
 
-    // Temp
-    const url = await generateRoomQRCode(room._id.toString());
-    room.qrCodeUrl = url;
-    room.save();
+        const room = await RoomModel.create({
+            users: [],
+            hostId: hostId,
+            conversationTime: conversationTime,
+            matchSetting: matchSetting,
+            genderMatching: genderMatching,
+        });
 
-    // room.qrCodeUrl = "DUMMY";
-    return room;
+        // Temp
+        const url = await generateRoomQRCode(room._id.toString());
+        room.qrCodeUrl = url;
+        room.save();
+
+        // room.qrCodeUrl = "DUMMY";
+        return {
+            status: 201,
+            data: {
+                room,
+            },
+        };
+    } catch (e) {
+        return handleServerError(e, "CreateRoom");
+    }
 };
 
 const generateRoomQRCode = async (roomId: string) => {
@@ -108,6 +147,12 @@ const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; us
 
 const joinRoom = async (userId: string, roomId: string) => {
     const room = await getRoom(roomId);
+
+    // Prevent joining the room twice
+    if (room!.users.includes(new mongoose.Types.ObjectId(userId))) {
+        customLogger(`User ${userId} already exists in roomm ${roomId}`);
+        return room;
+    }
 
     room!.users.push(new mongoose.Types.ObjectId(userId));
     //TODO make sure the nickname is unique

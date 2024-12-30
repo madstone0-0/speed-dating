@@ -68,6 +68,18 @@ export type JoinSocketMessage = RoomSocketMessage & {
     userId: string;
 };
 
+export type TimerStartMessage = RoomSocketMessage & {
+    duration: number;
+};
+
+export type TickSocketMessage = RoomSocketMessage & {
+    timeLeft: number;
+};
+
+export type TimerDoneMessage = RoomSocketMessage & {
+    type: MessageTypes.TIMER_DONE;
+};
+
 export interface SocketMessage {
     type: MessageTypes;
     roomId: string;

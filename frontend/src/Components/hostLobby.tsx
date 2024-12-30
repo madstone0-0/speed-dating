@@ -10,34 +10,12 @@ export function HostLobby() {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
     const [users, setUsers] = useState([]);
+    const [numMatches, setNumMatches] = useState(0);
     const [roomId, setRoomId] = useState("");
     const socket = useRef<WebSocket | null>();
+    const maxMatches = useRef(0);
 
-    useEffect(() => {
-        createRoom();
-    }, []);
-
-    useEffect(() => {
-        socket.current = new WebSocket(SOCKET_BASE);
-        socket.current.addEventListener("open", () => {
-            console.log("Connection created!");
-        });
-
-        socket.current.addEventListener("message", (event) => {
-            const data = JSON.parse(event.data);
-            console.log("Socket message -> ", data);
-
-            const { type, users } = data;
-            if (type == SocketMessageTypes.JOINED) setUsers(users);
-        });
-
-        return () => {
-            socket.current?.close();
-        };
-    }, []);
-
-    const handleMatch: MouseEventHandler = async (e) => {
-        e.preventDefault();
+    const getAndSendMatches = async (roomId: string) => {
         try {
             const res = await axios.post(`${API_BASE}/room/match/${roomId}`);
 
@@ -58,9 +36,70 @@ export function HostLobby() {
                 };
                 socket.current?.send(JSON.stringify(matchMessage));
             }
+            const timerMessage = {
+                type: SocketMessageTypes.TIMER_START,
+                roomId,
+                duration: 60,
+            };
+            socket.current?.send(JSON.stringify(timerMessage));
+            return matches;
         } catch (e) {
             console.error({ e });
         }
+    };
+
+    useEffect(() => {
+        createRoom();
+    }, []);
+
+    useEffect(() => {
+        socket.current = new WebSocket(SOCKET_BASE);
+        socket.current.addEventListener("open", () => {
+            console.log("Connection created!");
+        });
+
+        socket.current.addEventListener("message", (event) => {
+            const data = JSON.parse(event.data);
+            console.log("Socket message -> ", data);
+            console.log(`Max Matches: ${maxMatches.current}`);
+
+            const { type } = data;
+            switch (type) {
+                case SocketMessageTypes.JOINED:
+                    {
+                        const { users } = data;
+                        maxMatches.current = Math.floor(users.length / 2);
+                        setUsers(users);
+                    }
+                    break;
+                case SocketMessageTypes.TIMER_DONE:
+                    {
+                        if (numMatches < maxMatches.current) {
+                            getAndSendMatches(roomId).catch(console.error);
+                            setNumMatches(numMatches + 1);
+                            console.log("Auto rematching");
+                        } else {
+                            console.log("No more auto rematching");
+                        }
+                    }
+                    break;
+            }
+        });
+
+        return () => {
+            socket.current?.close();
+        };
+    }, []);
+
+    useEffect(() => {
+        if (roomId) console.log(`Room id: ${roomId}`);
+    }, [roomId]);
+
+    const handleMatch: MouseEventHandler = async (e) => {
+        e.preventDefault();
+        if (users.length === 0) return;
+        const matches = await getAndSendMatches(roomId);
+        setNumMatches(numMatches + 1);
     };
 
     const createRoom = async () => {
@@ -73,9 +112,10 @@ export function HostLobby() {
                 return;
             }
 
-            const data = request.data.data;
+            const data = request.data.data.room;
             console.log("Create room response -> ", data);
             const { qrCodeUrl, _id } = data;
+            setRoomId(_id);
 
             setQrCodeUrl(qrCodeUrl);
             socket.current!.send(
@@ -84,10 +124,10 @@ export function HostLobby() {
                     roomId: _id,
                 }),
             );
-            setRoomId(_id);
         } catch (e: any) {
             setError(true);
             console.log("Error creating room");
+            console.log({ RoomCreationError: e });
             alert("An unexpected error occured. Refresh the page to retry");
         }
     };
