@@ -18,7 +18,7 @@ const domain = process.env.DOMAIN! as string;
 const getUserRooms = async (hostId: string): PromiseReturn<{ rooms: Room[] }> => {
     try {
         const rooms = await RoomModel.find({ hostId }).sort("createdAt");
-        if (!rooms || rooms.length === 0) throw new ServiceError("No rooms found create by this user", 404);
+        if (!rooms || rooms.length === 0) throw new ServiceError(`No rooms found create by user ${hostId}`, 404);
         return {
             status: 200,
             data: {
@@ -37,21 +37,6 @@ const createRoom = async (
     genderMatching?: boolean,
 ): PromiseReturn<{ room: Room }> => {
     try {
-        // Temp fix for room creation on refresh
-        /*
-        const createdRooms = await getUserRooms(hostId);
-        if (createdRooms.status === 200) {
-            const room = createdRooms.data?.rooms[0]!;
-            return {
-                status: 201,
-                data: {
-                    room,
-                },
-            };
-        }
-        customLogger(`No existing room for ${hostId} creating new room`);
-        */
-
         const room = await RoomModel.create({
             users: [],
             hostId: hostId,
@@ -91,7 +76,7 @@ const getRoom = async (roomId: string) => {
     return room;
 };
 
-const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; user2: User | null}[][]> => {
+const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; user2: User | null }[][]> => {
     try {
         const room = await getRoom(roomId);
         if (!room) throw new ServiceError("Cannot find room", 404);
@@ -110,45 +95,41 @@ const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; us
         const roundMatches = [];
 
         const round = Math.max(male.length, female.length);
-        for(let i = 0; i<round; ++i){
+        for (let i = 0; i < round; ++i) {
             const matched = new Set<Mongoose.Types.ObjectId>();
             //keeps track of all the people that have been matched so far in this round
             const matches = [];
-            for(let j = 0; j<male.length; ++j){
+            for (let j = 0; j < male.length; ++j) {
                 //hella patriarchal... my bad - Tani
                 let femaleIndex = 0;
                 let foundMatch;
-                if(!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
+                if (!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
 
-                while(
-                    memberMap.get(male[j])!.has(female[femaleIndex]) ||
-                    matched.has(female[femaleIndex])
-                ){
+                while (memberMap.get(male[j])!.has(female[femaleIndex]) || matched.has(female[femaleIndex])) {
                     femaleIndex++;
-                    if(femaleIndex == female.length) break;
+                    if (femaleIndex == female.length) break;
                 }
 
-                foundMatch = (femaleIndex < female.length)? female[femaleIndex] : undefined; 
+                foundMatch = femaleIndex < female.length ? female[femaleIndex] : undefined;
                 const user1 = await UserService.getUserById(male[j].toString());
-                const user2 = (foundMatch) ? await UserService.getUserById(foundMatch!.toString()) :  null;
+                const user2 = foundMatch ? await UserService.getUserById(foundMatch!.toString()) : null;
                 matches.push({
-                    user1: user1!, 
-                    user2: user2
+                    user1: user1!,
+                    user2: user2,
                 });
-                if (foundMatch){
+                if (foundMatch) {
                     //if we have a match
                     //add to the list of matches for the person and the list of matches for that round
                     matched.add(foundMatch);
                     memberMap.get(male[j])!.add(foundMatch);
                 }
-                
             }
             roundMatches.push(matches);
         }
 
         customLogger(`Matched members for room ${roomId}: ${prettyPrint(roundMatches)}`);
-        
-        //roundMatches looks like 
+
+        //roundMatches looks like
         // 0 - [[a0,b0], [a1,b1]]
         //1 - [[a0,b1], [a1, b0]]
 
@@ -165,7 +146,7 @@ const joinRoom = async (userId: string, roomId: string) => {
     const room = await getRoom(roomId);
 
     // Prevent joining the room twice
-    if (room!.users.includes(new mongoose.Types.ObjectId(userId))) {
+    if (room!.users && room!.users.includes(new mongoose.Types.ObjectId(userId))) {
         customLogger(`User ${userId} already exists in roomm ${roomId}`);
         return room;
     }

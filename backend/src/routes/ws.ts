@@ -48,8 +48,9 @@ ws.get(
                         {
                             //this is for when someone joins
                             //we send the updated list of users in the room to the host
+                            // and add them to the roomToUsersMap with their socket
                             const { roomId, userId } = message as JoinSocketMessage;
-                            SocketService.handleJoinRoomMessage(roomId!, userId!, roomToHostmap);
+                            SocketService.handleJoinRoom(roomId!, userId!, roomToHostmap, roomToUsersMap, socket);
                         }
                         break;
                     case MessageTypes.MATCH:
@@ -58,14 +59,14 @@ ws.get(
                             SocketService.handleRoomMatch(roomId, roomToUsersMap, user1, user2);
                         }
                         break;
-                    
+
                     case MessageTypes.MATCH_DONE:
                         {
                             const { roomId } = message as RoomSocketMessage;
                             SocketService.broadcastMessage(roomId, roomToUsersMap, MessageTypes.MATCH_DONE);
                         }
                         break;
-                    
+
                     case MessageTypes.MATCHING_OVER:
                         {
                             const { roomId } = message as RoomSocketMessage;
@@ -81,19 +82,6 @@ ws.get(
                                     message: "Host socket set",
                                 }),
                             );
-                        }
-                        break;
-                    case MessageTypes.JOINED:
-                        {
-                            const { roomId, userId } = message as JoinSocketMessage;
-                            const users = roomToUsersMap.get(roomId) ?? new Map();
-                            users.set(userId, socket);
-                            roomToUsersMap.set(roomId, users);
-                            customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
-                            customLogger(`User: ${userId} added to room ${roomId}`);
-                            socket.send(JSON.stringify({
-                                type: MessageTypes.JOINED //might need to change the names here. It's a bit confusing
-                            }));
                         }
                         break;
                     case MessageTypes.TIMER_START:

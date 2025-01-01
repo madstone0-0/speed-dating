@@ -1,20 +1,43 @@
 import type { WSContext } from "hono/ws";
 import { MessageTypes } from "../constants/socketMessage.js";
-import type { MatchDoneMessage, MatchSocketMessage, RoomSocketMessage, SocketMessage, TickSocketMessage, TimerDoneMessage, User } from "../types.js";
+import type {
+    MatchDoneMessage,
+    MatchSocketMessage,
+    RoomSocketMessage,
+    SocketMessage,
+    TickSocketMessage,
+    TimerDoneMessage,
+    User,
+} from "../types.js";
 import { RoomService } from "./RoomService.js";
 import { UserService } from "./UserService.js";
 import { custom } from "zod";
 import { customLogger } from "../logger.js";
 import { prettyPrint } from "../utils.js";
 
-const handleJoinRoomMessage = async (
+const handleJoinRoom = async (
     roomId: string,
     userId: string,
     roomToHostMap: Map<string, WSContext<unknown>>,
+    roomToUsersMap: Map<string, Map<string, WSContext>>,
+    userSocket: WSContext,
 ) => {
     const socket = roomToHostMap.get(roomId);
     if (!socket) return; //just do nothing
 
+    // First add user to roomToUsersMap with their socket
+    const roomUsers = roomToUsersMap.get(roomId) ?? new Map();
+    roomUsers.set(userId, userSocket);
+    roomToUsersMap.set(roomId, roomUsers);
+    customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
+    customLogger(`User: ${userId} added to room ${roomId}`);
+    userSocket.send(
+        JSON.stringify({
+            type: MessageTypes.JOINED, //might need to change the names here. It's a bit confusing
+        }),
+    );
+
+    // Then send joined message
     const room = await RoomService.getRoom(roomId);
     if (!room) return;
     const users = await Promise.all(room!.users.map((uId) => UserService.getUserById(uId.toString())));
@@ -34,7 +57,7 @@ const genMatchMsg = (roomId: string, user1: User, user2: User): MatchSocketMessa
         roomId,
         type: MessageTypes.MATCHED,
         user1,
-        user2
+        user2,
     };
 };
 
@@ -65,7 +88,7 @@ const handleTimerStart = async (
         const message: TickSocketMessage = {
             type: MessageTypes.TICK,
             roomId,
-            timeLeft: timeLeft*1000,//working in miliseconds 
+            timeLeft: timeLeft * 1000, //working in miliseconds
         };
         socket.send(JSON.stringify(message)); //sending to the host
         for (const sock of sockets) {
@@ -100,8 +123,8 @@ const handleRoomMatch = async (
         return;
     }
 
-    if(!user2){
-        customLogger('No matching done here due to unbalanced numbers. Moving on');
+    if (!user2) {
+        customLogger("No matching done here due to unbalanced numbers. Moving on");
         return;
     }
 
@@ -116,22 +139,22 @@ const handleRoomMatch = async (
     user2Sock?.send(JSON.stringify(user2Msg));
 };
 
-const broadcastMessage = (roomId: string, roomToUsersMap: Map<string, Map<string, WSContext>>, type:MessageTypes)=>{
+const broadcastMessage = (roomId: string, roomToUsersMap: Map<string, Map<string, WSContext>>, type: MessageTypes) => {
     const users = roomToUsersMap.get(roomId);
-    if(!users) return;
-    
-    for(const userSocket of users.values()){
-        const message: RoomSocketMessage= {
+    if (!users) return;
+
+    for (const userSocket of users.values()) {
+        const message: RoomSocketMessage = {
             roomId,
-            type
+            type,
         };
         userSocket.send(JSON.stringify(message));
     }
-}
+};
 
 export const SocketService = {
-    handleJoinRoomMessage,
+    handleJoinRoom,
     handleRoomMatch,
     handleTimerStart,
-    broadcastMessage
+    broadcastMessage,
 };

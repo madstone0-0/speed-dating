@@ -17,7 +17,7 @@ export function UserScreen() {
     const [clickedButton, setClickedButton] = useState(-1);
     const userId = useRef<string>("");
     const [sessionUnderway, setSessionUnderway] = useState(false);
-    const [match, setMatch] = useState('');
+    const [match, setMatch] = useState("");
     const [matchingOver, setMatchingOver] = useState(false);
 
     const validate = () => {
@@ -41,7 +41,7 @@ export function UserScreen() {
                 return;
             }
             const data = request.data.data;
-            console.log('the _id ->', data._id);
+            console.log("the _id ->", data._id);
             userId.current = data._id;
             console.log("Response ->", request);
         } catch (e: any) {
@@ -77,6 +77,10 @@ export function UserScreen() {
             console.log("User socket connection created");
         });
 
+        socket.current.onclose = () => {
+            console.log("Connection Closed");
+        };
+
         socket.current.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
             console.log("Socket message -> ", data);
@@ -86,16 +90,16 @@ export function UserScreen() {
                 alert("Joined Successfully!");
                 setJoinedRoom(true);
                 //what happens when people refresh?
-            }else if(type == SocketMessageTypes.MATCHED){
+            } else if (type == SocketMessageTypes.MATCHED) {
                 setSessionUnderway(true);
                 const { user1, user2 } = data;
-                console.log('userId -> ', userId);
-                console.log('user1 -> ', user1);
-                console.log('user2 -> ', user2);
-                if(user2) setMatch((user1._id === userId.current)? user2.nickname : user1.nickname);
-            }else if(type == SocketMessageTypes.MATCH_DONE){
+                console.log("userId -> ", userId);
+                console.log("user1 -> ", user1);
+                console.log("user2 -> ", user2);
+                if (user2) setMatch(user1._id === userId.current ? user2.nickname : user1.nickname);
+            } else if (type == SocketMessageTypes.MATCH_DONE) {
                 setSessionUnderway(true);
-            }else if(type == SocketMessageTypes.MATCHING_OVER) setMatchingOver(true);
+            } else if (type == SocketMessageTypes.MATCHING_OVER) setMatchingOver(true);
         });
     }, []);
 
@@ -104,22 +108,12 @@ export function UserScreen() {
         //if the user has joined the room on the backend
         //we can send the socket joining message
         if (joinedRoomBackend && userId.current !== "") {
-            const message: SocketMessage = {
+            const message: JoinSocketMessage = {
                 type: SocketMessageTypes.JOIN_NOTIFICATION,
+                userId: userId.current!,
                 roomId: roomId!,
             };
             socket.current!.send(JSON.stringify(message));
-
-            // After we've sent the join notification we then send the join messages
-            // prolly should consolidate both of these tho
-            //fr... its a little confusing - Tani
-
-            const joinedMsg: JoinSocketMessage = {
-                ...message,
-                type: SocketMessageTypes.JOINED,
-                userId: userId.current!,
-            };
-            socket.current!.send(JSON.stringify(joinedMsg));
         }
     }, [joinedRoomBackend, userId.current]);
 
@@ -131,46 +125,51 @@ export function UserScreen() {
     return (
         <div className="main">
             {!joinedRoom ? (
-                
-                    <><div className="formDiv">
+                <>
+                    <div className="formDiv">
                         <h1>Enter your nickname!</h1>
                         <input onChange={(e) => setNickname(e.target.value)} />
-                    </div><div className="buttonHolder">
-                            <button
-                                className={clickedButton === 0 ? "buttonClicked" : "button"}
-                                onClick={() => {
-                                    setGender("MALE");
-                                    setClickedButton(0);
-                                } }
-                            >
-                                Male
-                            </button>
+                    </div>
+                    <div className="buttonHolder">
+                        <button
+                            className={clickedButton === 0 ? "buttonClicked" : "button"}
+                            onClick={() => {
+                                setGender("MALE");
+                                setClickedButton(0);
+                            }}
+                        >
+                            Male
+                        </button>
 
-                            <button
-                                className={clickedButton === 1 ? "buttonClicked" : "button"}
-                                onClick={() => {
-                                    setGender("FEMALE");
-                                    setClickedButton(1);
-                                } }
-                            >
-                                Female
-                            </button>
-                        </div><button onClick={submitFormJoinRoom}>Join!</button></>
-               
-            ) :sessionUnderway? (
+                        <button
+                            className={clickedButton === 1 ? "buttonClicked" : "button"}
+                            onClick={() => {
+                                setGender("FEMALE");
+                                setClickedButton(1);
+                            }}
+                        >
+                            Female
+                        </button>
+                    </div>
+                    <button onClick={submitFormJoinRoom}>Join!</button>
+                </>
+            ) : sessionUnderway ? (
                 <div className="sessionDiv">
-                    <h1> {match != '' ? `Your match is ${match}!` : 'Due to an inbalance in numbers. You have not been matched. Better luck next round'} </h1>
-                    <Timer socket={socket.current!} time={0}/>
+                    <h1>
+                        {" "}
+                        {match != ""
+                            ? `Your match is ${match}!`
+                            : "Due to an inbalance in numbers. You have not been matched. Better luck next round"}{" "}
+                    </h1>
+                    <Timer socket={socket.current!} time={0} />
                 </div>
-            ) : matchingOver?
-            (
+            ) : matchingOver ? (
                 <div>
                     <h1>Matching over!</h1>
                 </div>
-            ):
-             (
+            ) : (
                 <h1>Waiting for the host to begin matching!</h1>
             )}
-         </div>
+        </div>
     );
 }

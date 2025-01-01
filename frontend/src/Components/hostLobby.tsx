@@ -31,7 +31,7 @@ export function HostLobby() {
             const response = res.data.data;
             maxMatches.current = response.length;
             console.log({ response });
-            localStorage.setItem('matches', JSON.stringify(response));
+            localStorage.setItem("matches", JSON.stringify(response));
             return response;
         } catch (e) {
             console.error({ e });
@@ -40,31 +40,31 @@ export function HostLobby() {
 
     const SendMatches = async (roomId: string) => {
         try {
-            const matches = JSON.parse(localStorage.getItem('matches')!);
+            const matches = JSON.parse(localStorage.getItem("matches")!);
             const matchesForRound = matches![round.current];
-            console.log('matches for round -> ', matchesForRound);
+            console.log("matches for round -> ", matchesForRound);
 
             for (const match of matchesForRound) {
                 const matchMessage = {
                     type: SocketMessageTypes.MATCH,
                     roomId,
                     user1: match.user1,
-                    user2: (match.user2) ? match.user2: undefined,
+                    user2: match.user2 ? match.user2 : undefined,
                 };
                 socket.current?.send(JSON.stringify(matchMessage));
             }
             const matchDoneMessage = {
                 type: SocketMessageTypes.MATCH_DONE,
-                roomId
+                roomId,
             };
             const timerMessage = {
                 type: SocketMessageTypes.TIMER_START,
                 roomId,
-                duration: 30,//for test purposes
+                duration: 30, //for test purposes
             };
             socket.current?.send(JSON.stringify(matchDoneMessage));
             socket.current?.send(JSON.stringify(timerMessage));
-            console.log(`Matches for round ${round} sent`)
+            console.log(`Matches for round ${round} sent`);
             return matches;
         } catch (e) {
             console.error({ e });
@@ -80,6 +80,10 @@ export function HostLobby() {
         socket.current.addEventListener("open", () => {
             console.log("Connection created!");
         });
+
+        socket.current.onclose = () => {
+            console.log("Connection Closed");
+        };
 
         socket.current.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
@@ -99,14 +103,14 @@ export function HostLobby() {
                     {
                         if (round.current < maxMatches.current - 1) {
                             //indexing from 0 to max - 1
-                            round.current+= 1;
+                            round.current += 1;
                             SendMatches(roomId.current).catch(console.error);
-                            
+
                             console.log("Auto rematching");
                         } else {
                             const message: RoomSocketMessage = {
                                 roomId: roomId.current,
-                                type: SocketMessageTypes.MATCHING_OVER
+                                type: SocketMessageTypes.MATCHING_OVER,
                             };
                             socket.current!.send(JSON.stringify(message));
                             console.log("No more auto rematching");
@@ -164,8 +168,7 @@ export function HostLobby() {
     };
     return (
         <div className="main">
-        {!sessionStart ?
-            (
+            {!sessionStart ? (
                 <>
                     <div className="qrHolder">
                         <h1> Scan the QR code to join the room!</h1>
@@ -173,17 +176,15 @@ export function HostLobby() {
                     </div>
                     <div className="nameHolder">
                         {users.map((u) => {
-                        return <h2 key={u}>{u}</h2>;
+                            return <h2 key={u}>{u}</h2>;
                         })}
                     </div>
-                    
+
                     <button onClick={handleMatch}>Match</button>
                 </>
-                )
-            :
-            (
+            ) : (
                 <>
-                <Timer socket={socket.current!} time={0} />
+                    <Timer socket={socket.current!} time={0} />
                 </>
             )}
         </div>
