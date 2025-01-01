@@ -1,6 +1,6 @@
 import type { WSContext } from "hono/ws";
 import { MessageTypes } from "../constants/socketMessage.js";
-import type { MatchSocketMessage, SocketMessage, TickSocketMessage, TimerDoneMessage } from "../types.js";
+import type { MatchDoneMessage, MatchSocketMessage, RoomSocketMessage, SocketMessage, TickSocketMessage, TimerDoneMessage, User } from "../types.js";
 import { RoomService } from "./RoomService.js";
 import { UserService } from "./UserService.js";
 import { custom } from "zod";
@@ -29,12 +29,12 @@ const handleJoinRoomMessage = async (
     socket.send(JSON.stringify(message));
 };
 
-const genMatchMsg = (roomId: string, user1: string, user2: string): MatchSocketMessage => {
+const genMatchMsg = (roomId: string, user1: User, user2: User): MatchSocketMessage => {
     return {
         roomId,
         type: MessageTypes.MATCHED,
         user1,
-        user2,
+        user2
     };
 };
 
@@ -89,9 +89,9 @@ const handleTimerStart = async (
 
 const handleRoomMatch = async (
     roomId: string,
-    user1: string,
-    user2: string,
     roomToUsersMap: Map<string, Map<string, WSContext>>,
+    user1: User,
+    user2?: User,
 ) => {
     const userSockets = roomToUsersMap.get(roomId);
     if (!userSockets) {
@@ -99,10 +99,16 @@ const handleRoomMatch = async (
         customLogger("Found no room sockets");
         return;
     }
-    const user1Sock = userSockets.get(user1);
-    const user2Sock = userSockets.get(user2);
+
+    if(!user2){
+        customLogger('No matching done here due to unbalanced numbers. Moving on');
+        return;
+    }
+
+    const user1Sock = userSockets.get(user1._id!.toString());
+    const user2Sock = userSockets.get(user2!._id!.toString());
     const user1Msg = genMatchMsg(roomId, user1, user2);
-    const user2Msg = genMatchMsg(roomId, user2, user1);
+    const user2Msg = genMatchMsg(roomId, user1, user2); //need things to be consistent. That's why I changed this
 
     customLogger(`Sending message to user1 ${user1}: ${prettyPrint(user1Msg)}`);
     customLogger(`Sending message to user2 ${user2}: ${prettyPrint(user2Msg)}`);
@@ -110,8 +116,22 @@ const handleRoomMatch = async (
     user2Sock?.send(JSON.stringify(user2Msg));
 };
 
+const broadcastMessage = (roomId: string, roomToUsersMap: Map<string, Map<string, WSContext>>, type:MessageTypes)=>{
+    const users = roomToUsersMap.get(roomId);
+    if(!users) return;
+    
+    for(const userSocket of users.values()){
+        const message: RoomSocketMessage= {
+            roomId,
+            type
+        };
+        userSocket.send(JSON.stringify(message));
+    }
+}
+
 export const SocketService = {
     handleJoinRoomMessage,
     handleRoomMatch,
     handleTimerStart,
+    broadcastMessage
 };

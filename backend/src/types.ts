@@ -60,8 +60,8 @@ export type RoomSocketMessage = BaseSocketMessage & {
 };
 
 export type MatchSocketMessage = RoomSocketMessage & {
-    user1: string;
-    user2: string;
+    user1: User
+    user2?: User
 };
 
 export type JoinSocketMessage = RoomSocketMessage & {
@@ -78,6 +78,10 @@ export type TickSocketMessage = RoomSocketMessage & {
 
 export type TimerDoneMessage = RoomSocketMessage & {
     type: MessageTypes.TIMER_DONE;
+};
+
+export type MatchDoneMessage = RoomSocketMessage & {
+    type: MessageTypes.MATCH_DONE;
 };
 
 export interface SocketMessage {

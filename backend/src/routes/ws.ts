@@ -3,6 +3,7 @@ import { createNodeWebSocket } from "@hono/node-ws";
 import type {
     BaseSocketMessage,
     JoinSocketMessage,
+    MatchDoneMessage,
     MatchSocketMessage,
     RoomSocketMessage,
     TickSocketMessage,
@@ -22,6 +23,7 @@ const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app: ws });
 //map from the roomId to all the room sockets for that room
 // const roomToUsersMap = new Map<string, (string | WSContext<unknown>)[]>();
 const roomToUsersMap = new Map<string, Map<string, WSContext>>();
+//roomId -> (userId->socket)
 
 //map from the roomId to the host socket
 const roomToHostmap = new Map<string, WSContext>();
@@ -44,6 +46,8 @@ ws.get(
                 switch (type) {
                     case MessageTypes.JOIN_NOTIFICATION:
                         {
+                            //this is for when someone joins
+                            //we send the updated list of users in the room to the host
                             const { roomId, userId } = message as JoinSocketMessage;
                             SocketService.handleJoinRoomMessage(roomId!, userId!, roomToHostmap);
                         }
@@ -51,7 +55,21 @@ ws.get(
                     case MessageTypes.MATCH:
                         {
                             const { roomId, user1, user2 } = message as MatchSocketMessage;
-                            SocketService.handleRoomMatch(roomId, user1, user2, roomToUsersMap);
+                            SocketService.handleRoomMatch(roomId, roomToUsersMap, user1, user2);
+                        }
+                        break;
+                    
+                    case MessageTypes.MATCH_DONE:
+                        {
+                            const { roomId } = message as RoomSocketMessage;
+                            SocketService.broadcastMessage(roomId, roomToUsersMap, MessageTypes.MATCH_DONE);
+                        }
+                        break;
+                    
+                    case MessageTypes.MATCHING_OVER:
+                        {
+                            const { roomId } = message as RoomSocketMessage;
+                            SocketService.broadcastMessage(roomId, roomToUsersMap, MessageTypes.MATCHING_OVER);
                         }
                         break;
                     case MessageTypes.HOST:
@@ -73,6 +91,9 @@ ws.get(
                             roomToUsersMap.set(roomId, users);
                             customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
                             customLogger(`User: ${userId} added to room ${roomId}`);
+                            socket.send(JSON.stringify({
+                                type: MessageTypes.JOINED //might need to change the names here. It's a bit confusing
+                            }));
                         }
                         break;
                     case MessageTypes.TIMER_START:

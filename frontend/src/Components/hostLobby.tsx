@@ -5,14 +5,15 @@ import "./../styles/lobby.css";
 import { SOCKET_BASE } from "./constants";
 import { SocketMessageTypes } from "./constants/sockets";
 import { Timer } from "./timer";
+import { RoomSocketMessage } from "../types";
 
 axios.defaults.withCredentials = true;
 export function HostLobby() {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
     const [users, setUsers] = useState([]);
-    const [round, setRound] = useState(0);
-    const [roomId, setRoomId] = useState("");
+    const round = useRef<number>(0);
+    const roomId = useRef<string>("");
     const socket = useRef<WebSocket | null>();
     const maxMatches = useRef(0);
     const [sessionStart, setSessionStart] = useState(false);
@@ -40,23 +41,28 @@ export function HostLobby() {
     const SendMatches = async (roomId: string) => {
         try {
             const matches = JSON.parse(localStorage.getItem('matches')!);
-            const matchesForRound = matches![round];
+            const matchesForRound = matches![round.current];
             console.log('matches for round -> ', matchesForRound);
 
             for (const match of matchesForRound) {
                 const matchMessage = {
                     type: SocketMessageTypes.MATCH,
                     roomId,
-                    user1: match.user1._id,
-                    user2: match.user2._id,
+                    user1: match.user1,
+                    user2: (match.user2) ? match.user2: undefined,
                 };
                 socket.current?.send(JSON.stringify(matchMessage));
             }
+            const matchDoneMessage = {
+                type: SocketMessageTypes.MATCH_DONE,
+                roomId
+            };
             const timerMessage = {
                 type: SocketMessageTypes.TIMER_START,
                 roomId,
-                duration: 75,//for test purposes
+                duration: 30,//for test purposes
             };
+            socket.current?.send(JSON.stringify(matchDoneMessage));
             socket.current?.send(JSON.stringify(timerMessage));
             console.log(`Matches for round ${round} sent`)
             return matches;
@@ -91,13 +97,18 @@ export function HostLobby() {
                     break;
                 case SocketMessageTypes.TIMER_DONE:
                     {
-                        if (round < maxMatches.current - 1) {
+                        if (round.current < maxMatches.current - 1) {
                             //indexing from 0 to max - 1
-                            setRound(round + 1);
-                            SendMatches(roomId).catch(console.error);
+                            round.current+= 1;
+                            SendMatches(roomId.current).catch(console.error);
                             
                             console.log("Auto rematching");
                         } else {
+                            const message: RoomSocketMessage = {
+                                roomId: roomId.current,
+                                type: SocketMessageTypes.MATCHING_OVER
+                            };
+                            socket.current!.send(JSON.stringify(message));
                             console.log("No more auto rematching");
                         }
                     }
@@ -111,14 +122,14 @@ export function HostLobby() {
     }, []);
 
     useEffect(() => {
-        if (roomId) console.log(`Room id: ${roomId}`);
-    }, [roomId]);
+        if (roomId.current) console.log(`Room id: ${roomId.current}`);
+    }, [roomId.current]);
 
     const handleMatch: MouseEventHandler = async (e) => {
         e.preventDefault();
         if (users.length === 0) return;
-        await getMatches(roomId);
-        SendMatches(roomId);
+        await getMatches(roomId.current);
+        SendMatches(roomId.current);
         setSessionStart(true);
     };
 
@@ -135,7 +146,7 @@ export function HostLobby() {
             const data = request.data.data.room;
             console.log("Create room response -> ", data);
             const { qrCodeUrl, _id } = data;
-            setRoomId(_id);
+            roomId.current = _id;
 
             setQrCodeUrl(qrCodeUrl);
             socket.current!.send(
@@ -172,7 +183,7 @@ export function HostLobby() {
             :
             (
                 <>
-                <Timer socket={socket.current!} time={157000} />
+                <Timer socket={socket.current!} time={0} />
                 </>
             )}
         </div>
