@@ -1,12 +1,14 @@
 import type { Context, Hono } from "hono";
 import { RoomService } from "../services/RoomService.js";
-import { sendData, sendError, sendSR } from "../utils.js";
+import { prettyPrint, sendData, sendError, sendSR } from "../utils.js";
 import { customLogger } from "../logger.js";
 
 const createRoom = async (c: Context) => {
     try {
+        const validated = c.req.valid("json");
+        const { genderMatching, conversationTime, matchSetting } = validated;
         const userId = c.get("userId");
-        const room = await RoomService.createRoom(userId!);
+        const room = await RoomService.createRoom(userId!, conversationTime, matchSetting, genderMatching);
         return sendSR(c, room);
     } catch (e) {
         console.log("There was an error creating the room -> ", e);
@@ -41,8 +43,10 @@ const joinRoom = async (c: Context) => {
 
 const matchMembers = async (c: Context) => {
     try {
-        const { roomId } = c.req.param();
-        const sr = await RoomService.matchRoomMembers(roomId);
+        const validated = c.req.valid("json");
+        customLogger(prettyPrint(validated));
+        const { roomId, matchSetting, genderMatching } = validated;
+        const sr = await RoomService.matchRoomMembers(roomId, matchSetting, genderMatching);
         return sendSR(c, sr);
     } catch (e) {
         console.log(`There was an error matching the members -> ${e}`);

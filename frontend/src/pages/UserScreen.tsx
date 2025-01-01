@@ -52,7 +52,7 @@ export function UserScreen() {
 
     const joinRoom = async () => {
         try {
-            const request = await axios.post(`${API_BASE}/room/${roomId}`);
+            const request = await axios.post(`${API_BASE}/room/join/${roomId}`);
             if (request.status != 200) {
                 //need to do better error management here
                 console.log("Error joining room -> ", request);

@@ -34,10 +34,10 @@ export class ServiceError extends Error {
 }
 
 export const resolveError = (error: unknown) => {
-    if (error instanceof Error) {
-        return new ServiceError(error.message, 500);
-    } else if (error instanceof ServiceError) {
+    if (error instanceof ServiceError) {
         return error;
+    } else if (error instanceof Error) {
+        return new ServiceError(error.message, 500);
     }
 
     console.error(`Unknown error: ${error as string}`);
@@ -45,7 +45,9 @@ export const resolveError = (error: unknown) => {
 };
 export const handleServerError = (error: unknown, message: string): ServiceReturn => {
     const err = resolveError(error);
-    console.error(`${message} error: ${err.stack}`);
+    if (err.status == 500) {
+        console.error(`${message} error: ${err.stack}`);
+    } else console.log(`${message} error: ${err.message}`);
     return { status: err.status, data: { err: err.message } };
 };
 

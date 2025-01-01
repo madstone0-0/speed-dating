@@ -60,8 +60,8 @@ export type RoomSocketMessage = BaseSocketMessage & {
 };
 
 export type MatchSocketMessage = RoomSocketMessage & {
-    user1: User
-    user2?: User
+    user1: User;
+    user2?: User;
 };
 
 export type JoinSocketMessage = RoomSocketMessage & {
@@ -89,3 +89,5 @@ export interface SocketMessage {
     roomId: string;
     users?: string[]; //just a list of users in a room
 }
+
+export type RoomMatch = { user1: User; user2: User | null }[][];

@@ -8,7 +8,7 @@ import mongoose from "mongoose";
 import Mongoose from "mongoose";
 import { customLogger } from "../logger.js";
 import { handleServerError, prettyPrint, rng, sendError, ServiceError } from "../utils.js";
-import type { JoinSocketMessage, PromiseReturn, Room, User } from "../types.js";
+import type { JoinSocketMessage, PromiseReturn, Room, RoomMatch, User } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
 import { Gender } from "../constants/user.js";
 
@@ -71,61 +71,142 @@ const generateRoomQRCode = async (roomId: string) => {
 };
 
 const getRoom = async (roomId: string) => {
+    customLogger(prettyPrint(roomId));
     const room = await RoomModel.findOne({ _id: roomId });
     if (!room) return null;
     return room;
 };
 
-const matchRoomMembers = async (roomId: string): PromiseReturn<{ user1: User; user2: User | null }[][]> => {
+const matchGendered = async (
+    memberMap: Map<Mongoose.Types.ObjectId, Set<Mongoose.Types.ObjectId>>,
+    users: (User | null)[],
+) => {
+    // Split into male and female
+    const male = users.filter((m) => m!.gender == Gender.MALE).map((u) => u!._id!);
+    const female = users.filter((m) => m!.gender == Gender.FEMALE).map((u) => u!._id!);
+
+    const roundMatches = [];
+
+    const round = Math.max(male.length, female.length);
+    for (let i = 0; i < round; ++i) {
+        const matched = new Set<Mongoose.Types.ObjectId>();
+        //keeps track of all the people that have been matched so far in this round
+        const matches = [];
+        for (let j = 0; j < male.length; ++j) {
+            //hella patriarchal... my bad - Tani
+            let femaleIndex = 0;
+            let foundMatch;
+            if (!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
+
+            while (memberMap.get(male[j])!.has(female[femaleIndex]) || matched.has(female[femaleIndex])) {
+                femaleIndex++;
+                if (femaleIndex == female.length) break;
+            }
+
+            foundMatch = femaleIndex < female.length ? female[femaleIndex] : undefined;
+            const user1 = await UserService.getUserById(male[j].toString());
+            const user2 = foundMatch ? await UserService.getUserById(foundMatch!.toString()) : null;
+            matches.push({
+                user1: user1!,
+                user2: user2,
+            });
+            if (foundMatch) {
+                //if we have a match
+                //add to the list of matches for the person and the list of matches for that round
+                matched.add(foundMatch);
+                memberMap.get(male[j])!.add(foundMatch);
+            }
+        }
+        roundMatches.push(matches);
+    }
+    return roundMatches;
+};
+
+const matchNonGendered = async (
+    memberMap: Map<Mongoose.Types.ObjectId, Set<Mongoose.Types.ObjectId>>,
+    users: (User | null)[],
+) => {
+    // TODO: Improve with the Hungarian Algorithm https://www.wikiwand.com/en/articles/Hungarian_algorithm
+    const roundMatches = [];
+
+    // Filter out null users and map to ids
+    const userIds = await Promise.all(users.filter((u) => u).map((u) => u?._id!));
+    const round = userIds.length;
+
+    // Prepopulate the memberMap with empty sets
+    userIds.forEach((u) => {
+        if (!memberMap.has(u)) memberMap.set(u, new Set<Mongoose.Types.ObjectId>());
+    });
+
+    // Batch fetch all users once instead of in each round
+    const userMap = new Map(
+        (await Promise.all(userIds.map((id) => UserService.getUserById(id.toString())))).map((user) => [
+            user!._id.toString(),
+            user,
+        ]),
+    );
+
+    for (let i = 0; i < round; i++) {
+        // Matched uids
+        const matched = new Set<Mongoose.Types.ObjectId>();
+        const matches = [];
+
+        for (let j = 0; j < userIds.length; j++) {
+            const currUser = userIds[j];
+
+            if (matched.has(currUser)) continue;
+
+            const userMatches = memberMap.get(userIds[j])!;
+
+            // If the current user has already matched with the current user, the current user has already been matched with another user
+            // or the current user is the same as the user we are trying to match with, skip
+            const foundMatch = userIds.find(
+                (uid) =>
+                    uid !== currUser &&
+                    !userMatches.has(uid) &&
+                    !matched.has(uid) &&
+                    !memberMap.get(uid)!.has(currUser),
+            );
+
+            matches.push({
+                user1: userMap.get(currUser.toString())!,
+                user2: foundMatch ? userMap.get(foundMatch.toString()) : null,
+            });
+
+            if (foundMatch) {
+                matched.add(currUser);
+                matched.add(foundMatch);
+                // Add to the member map both ways
+                memberMap.get(currUser)!.add(foundMatch);
+                memberMap.get(foundMatch)!.add(currUser);
+            }
+        }
+        roundMatches.push(matches);
+    }
+    return roundMatches;
+};
+
+const matchRoomMembers = async (
+    roomId: string,
+    matchSetting: string,
+    genderMatching: boolean,
+): PromiseReturn<RoomMatch> => {
     try {
         const room = await getRoom(roomId);
         if (!room) throw new ServiceError("Cannot find room", 404);
 
         const members = [...room.users];
-        const memberMap = new Map<Mongoose.Types.ObjectId, Set<Mongoose.Types.ObjectId>>();
+
         //keeps track of all the person that a certain guy has been matched to
+        const memberMap = new Map<Mongoose.Types.ObjectId, Set<Mongoose.Types.ObjectId>>();
 
         customLogger(`Members: ${prettyPrint(members)}`);
 
-        // Split into male and female
         const users = await Promise.all(members.map((m) => UserService.getUserById(m._id.toString())));
-        const male = users.filter((m) => m!.gender == Gender.MALE).map((u) => u!._id);
-        const female = users.filter((m) => m!.gender == Gender.FEMALE).map((u) => u!._id);
 
-        const roundMatches = [];
-
-        const round = Math.max(male.length, female.length);
-        for (let i = 0; i < round; ++i) {
-            const matched = new Set<Mongoose.Types.ObjectId>();
-            //keeps track of all the people that have been matched so far in this round
-            const matches = [];
-            for (let j = 0; j < male.length; ++j) {
-                //hella patriarchal... my bad - Tani
-                let femaleIndex = 0;
-                let foundMatch;
-                if (!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
-
-                while (memberMap.get(male[j])!.has(female[femaleIndex]) || matched.has(female[femaleIndex])) {
-                    femaleIndex++;
-                    if (femaleIndex == female.length) break;
-                }
-
-                foundMatch = femaleIndex < female.length ? female[femaleIndex] : undefined;
-                const user1 = await UserService.getUserById(male[j].toString());
-                const user2 = foundMatch ? await UserService.getUserById(foundMatch!.toString()) : null;
-                matches.push({
-                    user1: user1!,
-                    user2: user2,
-                });
-                if (foundMatch) {
-                    //if we have a match
-                    //add to the list of matches for the person and the list of matches for that round
-                    matched.add(foundMatch);
-                    memberMap.get(male[j])!.add(foundMatch);
-                }
-            }
-            roundMatches.push(matches);
-        }
+        let roundMatches: RoomMatch;
+        if (genderMatching) roundMatches = await matchGendered(memberMap, users);
+        else roundMatches = await matchNonGendered(memberMap, users);
 
         customLogger(`Matched members for room ${roomId}: ${prettyPrint(roundMatches)}`);
 

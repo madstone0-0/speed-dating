@@ -5,22 +5,29 @@ import "./../styles/lobby.css";
 import { SOCKET_BASE } from "./constants";
 import { SocketMessageTypes } from "./constants/sockets";
 import { Timer } from "./timer";
-import { RoomSocketMessage } from "../types";
+import { RoomCreationInfo, RoomInfo, RoomSocketMessage } from "../types";
 
 axios.defaults.withCredentials = true;
 export function HostLobby() {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
     const [users, setUsers] = useState([]);
+    const [createRoomInfo, setCreateRoomInfo] = useState<RoomCreationInfo>({
+        matchSetting: "RANDOM",
+        conversationTime: 60,
+        genderMatching: false,
+    });
     const round = useRef<number>(0);
-    const roomId = useRef<string>("");
+    const roomInfo = useRef<RoomInfo>();
     const socket = useRef<WebSocket | null>();
     const maxMatches = useRef(0);
     const [sessionStart, setSessionStart] = useState(false);
 
-    const getMatches = async (roomId: string) => {
+    const getMatches = async (roomInfo: RoomInfo) => {
         try {
-            const res = await axios.post(`${API_BASE}/room/match/${roomId}`);
+            const res = await axios.post(`${API_BASE}/room/match`, {
+                data: roomInfo,
+            });
 
             if (res.status != 200) {
                 setError(true);
@@ -104,12 +111,12 @@ export function HostLobby() {
                         if (round.current < maxMatches.current - 1) {
                             //indexing from 0 to max - 1
                             round.current += 1;
-                            SendMatches(roomId.current).catch(console.error);
+                            SendMatches(roomInfo.current!.roomId).catch(console.error);
 
                             console.log("Auto rematching");
                         } else {
                             const message: RoomSocketMessage = {
-                                roomId: roomId.current,
+                                roomId: roomInfo.current!.roomId,
                                 type: SocketMessageTypes.MATCHING_OVER,
                             };
                             socket.current!.send(JSON.stringify(message));
@@ -126,20 +133,22 @@ export function HostLobby() {
     }, []);
 
     useEffect(() => {
-        if (roomId.current) console.log(`Room id: ${roomId.current}`);
-    }, [roomId.current]);
+        if (roomInfo.current) console.log(`Room id: ${roomInfo.current.roomId}`);
+    }, [roomInfo.current]);
 
     const handleMatch: MouseEventHandler = async (e) => {
         e.preventDefault();
         if (users.length === 0) return;
-        await getMatches(roomId.current);
-        SendMatches(roomId.current);
+        await getMatches(roomInfo.current!);
+        SendMatches(roomInfo.current!.roomId!);
         setSessionStart(true);
     };
 
     const createRoom = async () => {
         try {
-            const request = await axios.post(`${API_BASE}/room`);
+            const request = await axios.post(`${API_BASE}/room`, {
+                ...createRoomInfo,
+            });
 
             if (request.status != 201) {
                 setError(true);
@@ -149,8 +158,12 @@ export function HostLobby() {
 
             const data = request.data.data.room;
             console.log("Create room response -> ", data);
-            const { qrCodeUrl, _id } = data;
-            roomId.current = _id;
+            const { qrCodeUrl, _id, matchSetting, genderMatching } = data;
+            roomInfo.current = {
+                roomId: _id,
+                matchSetting,
+                genderMatching,
+            };
 
             setQrCodeUrl(qrCodeUrl);
             socket.current!.send(
@@ -159,7 +172,7 @@ export function HostLobby() {
                     roomId: _id,
                 }),
             );
-        } catch (e: any) {
+        } catch (e) {
             setError(true);
             console.log("Error creating room");
             console.log({ RoomCreationError: e });
@@ -179,7 +192,6 @@ export function HostLobby() {
                             return <h2 key={u}>{u}</h2>;
                         })}
                     </div>
-
                     <button onClick={handleMatch}>Match</button>
                 </>
             ) : (

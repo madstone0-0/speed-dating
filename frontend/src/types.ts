@@ -23,3 +23,14 @@ export type JoinSocketMessage = RoomSocketMessage & {
     userId: string;
 };
 
+export type RoomInfo = {
+    roomId: string;
+    matchSetting: string;
+    genderMatching: boolean;
+};
+
+export type RoomCreationInfo = {
+    matchSetting: string;
+    conversationTime: number;
+    genderMatching: boolean;
+};
