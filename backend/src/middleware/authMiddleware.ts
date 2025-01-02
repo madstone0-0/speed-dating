@@ -1,8 +1,9 @@
 import type { Context, Next } from "hono";
 import { getCookie } from "hono/cookie";
 import { prettyPrint, sendError, sendSR } from "../utils.js";
+import { createMiddleware } from "hono/factory";
 
-const requireUser = async (c: Context, next: Next) => {
+export const requireUser = createMiddleware(async (c, next) => {
     const cookie = getCookie(c, "userId");
     if (!cookie)
         return sendSR(c, {
@@ -12,8 +13,4 @@ const requireUser = async (c: Context, next: Next) => {
 
     c.set("userId", cookie);
     await next();
-};
-
-export const AuthMiddleware = {
-    requireUser,
-};
+});

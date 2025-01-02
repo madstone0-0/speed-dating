@@ -1,9 +1,11 @@
 import { Hono } from "hono";
-import { RoomController } from "../controllers/roomControllers.js";
-import { AuthMiddleware } from "../middleware/authMiddleware.js";
+import { requireUser } from "../middleware/authMiddleware.js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { every } from "hono/combine";
+import { RoomService } from "../services/RoomService.js";
+import { prettyPrint, sendSR } from "../utils.js";
+import { customLogger } from "../logger.js";
+import { getCookie } from "hono/cookie";
 
 const room = new Hono();
 
@@ -16,9 +18,45 @@ const createReqValdiator = zValidator(
     }),
 );
 
-room.post("/", every(AuthMiddleware.requireUser, createReqValdiator), RoomController.createRoom);
+room.use(requireUser);
 
-room.post("/join/:roomId", AuthMiddleware.requireUser, RoomController.joinRoom);
+room.post("/", createReqValdiator, async (c) => {
+    try {
+        const validated = c.req.valid("json");
+        const { genderMatching, conversationTime, matchSetting } = validated;
+        const userId = getCookie(c, "userId");
+        const room = await RoomService.createRoom(userId!, conversationTime, matchSetting, genderMatching);
+        return sendSR(c, room);
+    } catch (e) {
+        console.log("There was an error creating the room -> ", e);
+        return c.json(
+            {
+                message: "There was an error",
+            },
+            500,
+        );
+    }
+});
+
+room.post("/join/:roomId", async (c) => {
+    try {
+        const userId = getCookie(c, "userId");
+        const { roomId } = c.req.param();
+
+        await RoomService.joinRoom(userId!, roomId);
+        return sendSR(c, {
+            status: 200,
+        });
+    } catch (e) {
+        console.log("There was an error joining the room -> ", e);
+        return c.json(
+            {
+                message: "There was an error",
+            },
+            500,
+        );
+    }
+});
 
 const matchReqValidator = zValidator(
     "json",
@@ -29,6 +67,22 @@ const matchReqValidator = zValidator(
     }),
 );
 
-room.post("/match", every(AuthMiddleware.requireUser, matchReqValidator), RoomController.matchMembers);
+room.post("/match", matchReqValidator, async (c) => {
+    try {
+        const validated = c.req.valid("json");
+        customLogger(prettyPrint(validated));
+        const { roomId, matchSetting, genderMatching } = validated;
+        const sr = await RoomService.matchRoomMembers(roomId, matchSetting, genderMatching);
+        return sendSR(c, sr);
+    } catch (e) {
+        console.log(`There was an error matching the members -> ${e}`);
+        return c.json(
+            {
+                message: "There was an error",
+            },
+            500,
+        );
+    }
+});
 
 export default room;

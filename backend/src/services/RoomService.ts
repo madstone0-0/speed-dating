@@ -127,7 +127,7 @@ const matchNonGendered = async (
     users: (User | null)[],
 ) => {
     // TODO: Improve with the Hungarian Algorithm https://www.wikiwand.com/en/articles/Hungarian_algorithm
-    const roundMatches = [];
+    const roundMatches: RoomMatch = [];
 
     // Filter out null users and map to ids
     const userIds = await Promise.all(users.filter((u) => u).map((u) => u?._id!));
@@ -149,7 +149,7 @@ const matchNonGendered = async (
     for (let i = 0; i < round; i++) {
         // Matched uids
         const matched = new Set<Mongoose.Types.ObjectId>();
-        const matches = [];
+        const matches: { user1: User; user2: User | null }[] = [];
 
         for (let j = 0; j < userIds.length; j++) {
             const currUser = userIds[j];
@@ -170,7 +170,7 @@ const matchNonGendered = async (
 
             matches.push({
                 user1: userMap.get(currUser.toString())!,
-                user2: foundMatch ? userMap.get(foundMatch.toString()) : null,
+                user2: foundMatch ? userMap.get(foundMatch.toString())! : null,
             });
 
             if (foundMatch) {
