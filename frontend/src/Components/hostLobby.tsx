@@ -26,7 +26,7 @@ export function HostLobby() {
     const getMatches = async (roomInfo: RoomInfo) => {
         try {
             const res = await axios.post(`${API_BASE}/room/match`, {
-                data: roomInfo,
+                ...roomInfo,
             });
 
             if (res.status != 200) {
@@ -108,13 +108,18 @@ export function HostLobby() {
                     break;
                 case SocketMessageTypes.TIMER_DONE:
                     {
+                        console.log("Here");
                         if (round.current < maxMatches.current - 1) {
+                            console.log("More matches");
                             //indexing from 0 to max - 1
                             round.current += 1;
                             SendMatches(roomInfo.current!.roomId).catch(console.error);
+                            setSessionStart(true);
 
                             console.log("Auto rematching");
                         } else {
+                            setSessionStart(false);
+                            console.log("No more matches");
                             const message: RoomSocketMessage = {
                                 roomId: roomInfo.current!.roomId,
                                 type: SocketMessageTypes.MATCHING_OVER,

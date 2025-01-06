@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { API_BASE, SOCKET_BASE } from "../Components/constants";
 import axios from "axios";
 import { SocketMessageTypes } from "../Components/constants/sockets";
-import { JoinSocketMessage, SocketMessage } from "../types";
+import { JoinSocketMessage, SocketMessage, TimerExtendMessage } from "../types";
 import "./../styles/userScreen.css";
 import { Timer } from "../Components/timer";
 
@@ -19,6 +19,7 @@ export function UserScreen() {
     const [sessionUnderway, setSessionUnderway] = useState(false);
     const [match, setMatch] = useState("");
     const [matchingOver, setMatchingOver] = useState(false);
+    const [sentExtend, setSentExtend] = useState(false);
 
     const validate = () => {
         return gender == "" || nickname == "";
@@ -91,6 +92,7 @@ export function UserScreen() {
                 setJoinedRoom(true);
                 //what happens when people refresh?
             } else if (type == SocketMessageTypes.MATCHED) {
+                setSentExtend(false);
                 setSessionUnderway(true);
                 const { user1, user2 } = data;
                 console.log("userId -> ", userId);
@@ -98,10 +100,23 @@ export function UserScreen() {
                 console.log("user2 -> ", user2);
                 if (user2) setMatch(user1._id === userId.current ? user2.nickname : user1.nickname);
             } else if (type == SocketMessageTypes.MATCH_DONE) {
+                setSentExtend(false);
                 setSessionUnderway(true);
             } else if (type == SocketMessageTypes.MATCHING_OVER) setMatchingOver(true);
         });
     }, []);
+
+    const handleExtend = () => {
+        if (sentExtend) return;
+        if (socket.current) {
+            const extendMessage: TimerExtendMessage = {
+                type: SocketMessageTypes.TIMER_EXTEND,
+                roomId: roomId!,
+            };
+            socket.current.send(JSON.stringify(extendMessage));
+            setSentExtend(true);
+        }
+    };
 
     //TODO: fix the mess here
     useEffect(() => {
@@ -161,6 +176,15 @@ export function UserScreen() {
                             ? `Your match is ${match}!`
                             : "Due to an inbalance in numbers. You have not been matched. Better luck next round"}{" "}
                     </h1>
+                    <button
+                        disabled={sentExtend}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            handleExtend();
+                        }}
+                    >
+                        Extend
+                    </button>
                     <Timer socket={socket.current!} time={0} />
                 </div>
             ) : matchingOver ? (

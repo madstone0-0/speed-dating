@@ -23,6 +23,10 @@ export type JoinSocketMessage = RoomSocketMessage & {
     userId: string;
 };
 
+export type TimerExtendMessage = RoomSocketMessage & {
+    type: SocketMessageTypes.TIMER_EXTEND;
+};
+
 export type RoomInfo = {
     roomId: string;
     matchSetting: string;
