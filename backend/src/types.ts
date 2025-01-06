@@ -80,6 +80,14 @@ export type TimerDoneMessage = RoomSocketMessage & {
     type: MessageTypes.TIMER_DONE;
 };
 
+export type TimerExtendMessage = RoomSocketMessage & {
+    type: MessageTypes.TIMER_EXTEND;
+};
+
+export type TimerExtendedMesessage = RoomSocketMessage & {
+    type: MessageTypes.EXTENDED;
+};
+
 export type MatchDoneMessage = RoomSocketMessage & {
     type: MessageTypes.MATCH_DONE;
 };

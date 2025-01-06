@@ -7,6 +7,7 @@ import type {
     SocketMessage,
     TickSocketMessage,
     TimerDoneMessage,
+    TimerExtendedMesessage,
     User,
 } from "../types.js";
 import { RoomService } from "./RoomService.js";
@@ -65,36 +66,42 @@ const handleTimerStart = async (
     roomId: string,
     duration: number,
     roomToHostMap: Map<string, WSContext<unknown>>,
-    roomToTimerMap: Map<string, [number, NodeJS.Timeout | undefined]>,
+    roomToTimerMap: Map<string, [number, number, NodeJS.Timeout | undefined]>,
     roomToUsersMap: Map<string, Map<string, WSContext>>,
 ) => {
     const socket = roomToHostMap.get(roomId);
     if (!socket) return;
     const memberSockets = roomToUsersMap.get(roomId);
+    if (!memberSockets || memberSockets?.size === 0) return;
 
     // Create a nullable timer object so we can store it in the map with the duration
     let timer: NodeJS.Timeout | undefined;
-    roomToTimerMap.set(roomId, [duration, timer]);
+    roomToTimerMap.set(roomId, [duration, 0, timer]);
 
     // Create a timer that decrements the duration every second until the duration is zero
     // sending tick messages to the host and every in the room each second
     timer = setInterval(() => {
         const sockets = memberSockets!.values()!;
-        const timeLeft = roomToTimerMap.get(roomId)![0] - 1;
+        const timerInfo = roomToTimerMap.get(roomId)!;
+        const timeLeft = timerInfo![0] - 1;
+        const wantToExtend = timerInfo[1];
         const timerDone: TimerDoneMessage = {
             type: MessageTypes.TIMER_DONE,
             roomId,
         };
+
         const message: TickSocketMessage = {
             type: MessageTypes.TICK,
             roomId,
             timeLeft: timeLeft * 1000, //working in miliseconds
         };
+
         socket.send(JSON.stringify(message)); //sending to the host
         for (const sock of sockets) {
             sock.send(JSON.stringify(message)); //sending to all other people in the room
         }
-        roomToTimerMap.set(roomId, [timeLeft, timer]);
+
+        roomToTimerMap.set(roomId, [timeLeft, wantToExtend, timer]);
         if (timeLeft === 0) {
             // HACK: For TIMER_DONE not hitting in main onMessage
             customLogger(`Hit zero`);
@@ -108,6 +115,44 @@ const handleTimerStart = async (
             return;
         }
     }, 1000);
+};
+
+const handleTimerExtend = async (
+    roomId: string,
+    roomToHostMap: Map<string, WSContext<unknown>>,
+    roomToUsersMap: Map<string, Map<string, WSContext>>,
+    roomToTimerMap: Map<string, [number, number, NodeJS.Timeout | undefined]>,
+    extension: number = 10,
+) => {
+    const socket = roomToHostMap.get(roomId);
+    if (!socket) return;
+
+    const timerInfo = roomToTimerMap.get(roomId)!;
+    let timeLeft = timerInfo[0];
+    let wantToExtend = timerInfo[1];
+    const timerObj = timerInfo[2];
+
+    wantToExtend += 1; // Increase the number of people who want to extend the round
+
+    const threshold = Math.floor(roomToUsersMap.size / 2);
+
+    if (wantToExtend >= threshold) {
+        timeLeft += extension; // Add more time
+        roomToTimerMap.set(roomId, [timeLeft, 0, timerObj]);
+        const sockets = roomToUsersMap.get(roomId)!.values();
+        const extendedMessage: TimerExtendedMesessage = {
+            type: MessageTypes.EXTENDED,
+            roomId: roomId,
+        };
+        socket.send(JSON.stringify(extendedMessage));
+        for (const sock of sockets) {
+            sock.send(JSON.stringify(extendedMessage));
+        }
+        customLogger(`Timer for room ${roomId} extended for ${extension} seconds`);
+        return;
+    }
+
+    roomToTimerMap.set(roomId, [timeLeft, wantToExtend, timerObj]);
 };
 
 const handleRoomMatch = async (
@@ -156,5 +201,6 @@ export const SocketService = {
     handleJoinRoom,
     handleRoomMatch,
     handleTimerStart,
+    handleTimerExtend,
     broadcastMessage,
 };

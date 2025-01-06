@@ -8,6 +8,7 @@ import type {
     RoomSocketMessage,
     TickSocketMessage,
     TimerDoneMessage,
+    TimerExtendMessage,
     TimerStartMessage,
 } from "../types.js";
 import { MessageTypes } from "../constants/socketMessage.js";
@@ -28,7 +29,8 @@ const roomToUsersMap = new Map<string, Map<string, WSContext>>();
 //map from the roomId to the host socket
 const roomToHostmap = new Map<string, WSContext>();
 
-const roomToTimerMap = new Map<string, [number, NodeJS.Timeout | undefined]>();
+const roomToTimerMap = new Map<string, [number, number, NodeJS.Timeout | undefined]>();
+// roomId -> [ timeLeft, wantToExtend, timerObj ]
 
 ws.get(
     "/ws",
@@ -101,6 +103,15 @@ ws.get(
                         {
                             const { roomId, timeLeft } = message as TickSocketMessage;
                             customLogger(`Room ${roomId} time left: ${timeLeft}`);
+                        }
+                        break;
+                    case MessageTypes.TIMER_EXTEND:
+                        {
+                            const { roomId } = message as TimerExtendMessage;
+                            customLogger(`A person wants to extend the time for room ${roomId}`);
+                            // Only gets called when some clicks the extend button, thus only gets checked then too
+                            // I think it makes sense
+                            SocketService.handleTimerExtend(roomId, roomToHostmap, roomToUsersMap, roomToTimerMap);
                         }
                         break;
                     case MessageTypes.TIMER_DONE: // FIX: TIMER_DONE from handleTimerStart is not actually hitting this
