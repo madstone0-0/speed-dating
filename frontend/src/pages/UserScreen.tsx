@@ -177,7 +177,7 @@ export function UserScreen() {
                             : "Due to an inbalance in numbers. You have not been matched. Better luck next round"}{" "}
                     </h1>
                     <button
-                        disabled={sentExtend}
+                        disabled={sentExtend || match == ""}
                         onClick={(e) => {
                             e.preventDefault();
                             handleExtend();
