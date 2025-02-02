@@ -6,6 +6,7 @@ type timerProps = {
     socket: WebSocket;
     time: number;
 };
+
 export function Timer({ socket, time }: timerProps) {
     const [timeLeft, setTimeLeft] = useState(time);
     useEffect(() => {
@@ -38,4 +39,3 @@ export function Timer({ socket, time }: timerProps) {
         </>
     );
 }
-

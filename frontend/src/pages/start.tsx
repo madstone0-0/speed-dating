@@ -1,9 +1,9 @@
 import { useState } from "react";
 import "./../styles/start.css";
-import axios from "axios";
 import { API_BASE } from "../Components/constants";
 import { HostLobby } from "../Components/hostLobby";
-import { v4 } from 'uuid';
+import { v4 } from "uuid";
+import { ratatosk } from "../Components/utils/Fetch";
 
 export function Start() {
     const [loading, setLoading] = useState(false);
@@ -12,7 +12,7 @@ export function Start() {
     const signUpAsHost = async () => {
         try {
             setLoading(true);
-            const request = await axios.post(`${API_BASE}/auth/signup`, {
+            const request = await ratatosk.post<any>(`${API_BASE}/auth/signup`, {
                 nickname: v4(),
                 host: true,
             });
@@ -44,4 +44,3 @@ export function Start() {
         </div>
     );
 }
-

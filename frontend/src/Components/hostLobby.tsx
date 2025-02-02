@@ -1,13 +1,12 @@
 import { EventHandler, MouseEventHandler, useEffect, useRef, useState } from "react";
-import axios from "axios";
 import { API_BASE } from "./constants";
 import "./../styles/lobby.css";
 import { SOCKET_BASE } from "./constants";
 import { SocketMessageTypes } from "./constants/sockets";
 import { Timer } from "./timer";
 import { RoomCreationInfo, RoomInfo, RoomSocketMessage } from "../types";
+import { ratatosk } from "./utils/Fetch";
 
-axios.defaults.withCredentials = true;
 export function HostLobby() {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
@@ -25,7 +24,7 @@ export function HostLobby() {
 
     const getMatches = async (roomInfo: RoomInfo) => {
         try {
-            const res = await axios.post(`${API_BASE}/room/match`, {
+            const res = await ratatosk.post<any>(`${API_BASE}/room/match`, {
                 ...roomInfo,
             });
 
@@ -151,7 +150,7 @@ export function HostLobby() {
 
     const createRoom = async () => {
         try {
-            const request = await axios.post(`${API_BASE}/room`, {
+            const request = await ratatosk.post<any>(`${API_BASE}/room`, {
                 ...createRoomInfo,
             });
 

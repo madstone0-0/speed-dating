@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { API_BASE, SOCKET_BASE } from "../Components/constants";
-import axios from "axios";
 import { SocketMessageTypes } from "../Components/constants/sockets";
 import { JoinSocketMessage, SocketMessage, TimerExtendMessage } from "../types";
 import "./../styles/userScreen.css";
 import { Timer } from "../Components/timer";
+import { ratatosk } from "../Components/utils/Fetch";
 
 export function UserScreen() {
     const socket = useRef<WebSocket | null>();
     const { roomId } = useParams();
     const [joinedRoomBackend, setJoinedRoomBackend] = useState(false);
     const [joinedRoom, setJoinedRoom] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [nickname, setNickname] = useState("");
     const [gender, setGender] = useState("");
     const [clickedButton, setClickedButton] = useState(-1);
@@ -31,39 +32,47 @@ export function UserScreen() {
                 alert("Fill the form completely!");
                 return;
             }
-            const request = await axios.post(`${API_BASE}/auth/signup`, {
+            const request = await ratatosk.post<any>(`${API_BASE}/auth/signup`, {
                 nickname: nickname,
                 host: false,
                 gender: gender,
             });
+
             if (request.status != 200) {
                 console.log("Error joining room -> ", request);
                 alert("An error occured!");
+                setLoading(false);
                 return;
             }
+
             const data = request.data.data;
             console.log("the _id ->", data._id);
             userId.current = data._id;
             console.log("Response ->", request);
+            setLoading(false);
         } catch (e: any) {
             console.log("There was an error signing user up -> ", e);
             alert("An unexpected error occured");
+            setLoading(false);
         }
     };
 
     const joinRoom = async () => {
         try {
-            const request = await axios.post(`${API_BASE}/room/join/${roomId}`);
+            const request = await ratatosk.post<any>(`${API_BASE}/room/join/${roomId}`, {});
             if (request.status != 200) {
                 //need to do better error management here
                 console.log("Error joining room -> ", request);
                 alert("An error occured!");
+                setLoading(false);
                 return;
             }
+            setLoading(false);
             setJoinedRoomBackend(true);
         } catch (e: any) {
             console.log("Error creating room");
             alert("An unexpected error occured. Refresh the page to retry");
+            setLoading(false);
         }
     };
 
@@ -133,6 +142,7 @@ export function UserScreen() {
     }, [joinedRoomBackend, userId.current]);
 
     const submitFormJoinRoom = async () => {
+        setLoading(true);
         await signUp();
         await joinRoom();
     };
@@ -166,7 +176,9 @@ export function UserScreen() {
                             Female
                         </button>
                     </div>
-                    <button onClick={submitFormJoinRoom}>Join!</button>
+                    <button disabled={loading} onClick={submitFormJoinRoom}>
+                        Join!
+                    </button>
                 </>
             ) : sessionUnderway ? (
                 <div className="sessionDiv">
