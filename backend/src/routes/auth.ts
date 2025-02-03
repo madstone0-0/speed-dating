@@ -30,6 +30,8 @@ auth.post("/signup", signupValidator, async (c) => {
 
         setCookie(c, "userId", res.data!._id!.toString(), {
             maxAge: 7200, //expires after 2 hours
+            sameSite: "none",
+            secure: true,
         });
         return sendSR(c, res);
     } catch (e: any) {
