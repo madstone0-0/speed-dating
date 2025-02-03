@@ -1,7 +1,7 @@
 {
+	"packageManager": "pnpm@9.15.2",
 	"engines": {
-		"node": "20.x",
-		"pnpm": "9.x"
+		"node": "20.x"
 	},
 	"scripts": {
 		"heroku-prebuild-pnpm": "cd backend && pnpm install && pnpm run build && cd ..",
