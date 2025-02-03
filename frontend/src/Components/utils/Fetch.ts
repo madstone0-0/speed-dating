@@ -39,23 +39,27 @@ class Fetch implements IFetch {
     // }
 
     async get<T = never, R = AxiosResponse<T>>(url: string, options?: AxiosRequestConfig<T>) {
+        console.log({ withCredentials: this.instance.defaults.withCredentials });
         const res = await this.instance.get<T, R>(url, { ...options });
         return res;
     }
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     async post<T = never, R = AxiosResponse<T>>(url: string, data: any, options?: AxiosRequestConfig<T>) {
+        console.log({ withCredentials: this.instance.defaults.withCredentials });
         const res = await this.instance.post<T, R>(url, data, { ...options });
         return res;
     }
 
     async put<T = never, R = AxiosResponse<T>>(url: string, data: any, options?: AxiosRequestConfig) {
+        console.log({ withCredentials: this.instance.defaults.withCredentials });
         const res = await this.instance.put<T, R>(url, data, { ...options });
         return res;
     }
     /* eslint-enable @typescript-eslint/no-explicit-any */
 
     async delete<T = never, R = AxiosResponse<T>>(url: string, options?: AxiosRequestConfig<T>) {
+        console.log({ withCredentials: this.instance.defaults.withCredentials });
         const res = await this.instance.delete<T, R>(url, { ...options });
         return res;
     }
