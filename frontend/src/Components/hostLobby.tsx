@@ -66,7 +66,7 @@ export function HostLobby() {
             const timerMessage = {
                 type: SocketMessageTypes.TIMER_START,
                 roomId,
-                duration: 30, //for test purposes
+                duration: 60, //for test purposes
             };
             socket.current?.send(JSON.stringify(matchDoneMessage));
             socket.current?.send(JSON.stringify(timerMessage));
