@@ -186,6 +186,17 @@ const matchNonGendered = async (
     return roundMatches;
 };
 
+const countUnmatched = (matches: RoomMatch) => {
+    const unmatchedSet = new Set<string>();
+    for (const match of matches) {
+        for (const pair of match) {
+            if (!pair.user2) unmatchedSet.add(pair.user1._id!.toString());
+        }
+    }
+
+    return unmatchedSet.size;
+};
+
 const matchRoomMembers = async (
     roomId: string,
     matchSetting: string,
