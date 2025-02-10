@@ -130,9 +130,9 @@ const handleTimerStart = async (
         };
 
         socket.send(JSON.stringify(message)); //sending to the host
-        for (const sock of sockets) {
-            sock.send(JSON.stringify(message)); //sending to all other people in the room
-        }
+        // for (const sock of sockets) {
+        //     sock.send(JSON.stringify(message)); //sending to all other people in the room
+        // }
 
         roomToTimerMap.set(roomId, [timeLeft, wantToExtend, timer]);
         if (timeLeft === 0) {

@@ -8,6 +8,7 @@ import { Timer } from "../Components/timer";
 import { ratatosk } from "../Components/utils/Fetch";
 import { getSessionStore, removeSessionStore, setSessionStore } from "../Components/utils";
 import { AxiosError } from "axios";
+import { SuggestedTopics } from "../Components/suggestedTopics";
 
 export function UserScreen() {
     const socket = useRef<WebSocket | null>();
@@ -221,7 +222,8 @@ export function UserScreen() {
                     >
                         Extend
                     </button>
-                    <Timer socket={socket.current!} time={0} />
+                    {/* <Timer socket={socket.current!} time={0} /> */}
+                    <SuggestedTopics/>
                 </div>
             ) : matchingOver ? (
                 <div>

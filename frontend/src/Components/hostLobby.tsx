@@ -154,6 +154,7 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
         });
 
         return () => {
+            alert('Socket connection closed.\nThis is usually due to poor or weak wifi. Refresh and start again')
             socket.current?.close();
         };
     }, []);
