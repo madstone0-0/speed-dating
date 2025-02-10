@@ -4,6 +4,7 @@ import { API_BASE } from "../Components/constants";
 import { HostLobby } from "../Components/hostLobby";
 import { v4 } from "uuid";
 import { ratatosk } from "../Components/utils/Fetch";
+import { setSessionStore } from "../Components/utils";
 
 export function Start() {
     const [loading, setLoading] = useState(false);
@@ -17,6 +18,9 @@ export function Start() {
                 host: true,
             });
             if (request.status == 200) setUserCreated(true);
+            const token = request.data.extra.token;
+            console.log({ token });
+            setSessionStore("token", token);
 
             console.log("Response ->", request);
             setLoading(false);
@@ -30,15 +34,15 @@ export function Start() {
     return (
         <div className="main">
             {loading ? (
-                <h1>Loading...</h1>
+                <h1 className="header">Loading...</h1>
             ) : userCreated ? (
-                <>
-                    <HostLobby />
-                </>
+                <HostLobby setUserCreated={setUserCreated} />
             ) : (
                 <>
-                    <h1>Create a speed dating session </h1>
-                    <button onClick={signUpAsHost}>Let's start!</button>
+                    <h1 className="p-4 text-5xl md:p-10 md:text-7xl header">Create a speed dating session </h1>
+                    <button className="m-2" onClick={signUpAsHost}>
+                        Let's start!
+                    </button>
                 </>
             )}
         </div>

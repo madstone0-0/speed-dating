@@ -16,11 +16,43 @@ import { custom } from "zod";
 import { customLogger } from "../logger.js";
 import { prettyPrint } from "../utils.js";
 
+const handleLeaveRoom = async (
+    userSocket: WSContext,
+    roomToHostMap: Map<string, WSContext<unknown>>,
+    roomToUsersMap: Map<string, Map<string, WSContext>>,
+    userToRoomMap: Map<string, string>,
+    socketToUserMap: Map<WSContext, string>,
+) => {
+    const userId = socketToUserMap.get(userSocket);
+    if (!userId) return;
+    const roomId = userToRoomMap.get(userId);
+    if (!roomId) return;
+
+    // Remove user from room map
+    const roomMap = roomToUsersMap.get(roomId)!;
+    roomMap.delete(userId);
+
+    // Then remove user from room
+    const room = await RoomService.leaveRoom(userId, roomId);
+    if (!room) return;
+    const users = await Promise.all(room!.users.map((uId) => UserService.getUserById(uId.toString())));
+    const userNicknames = users.map((u) => u!.nickname);
+
+    const hostSocket = roomToHostMap.get(roomId)!;
+    const message: SocketMessage = {
+        type: MessageTypes.JOINED,
+        roomId: roomId,
+        users: userNicknames,
+    };
+    hostSocket.send(JSON.stringify(message));
+};
+
 const handleJoinRoom = async (
     roomId: string,
     userId: string,
     roomToHostMap: Map<string, WSContext<unknown>>,
     roomToUsersMap: Map<string, Map<string, WSContext>>,
+    userToRoomMap: Map<string, string>,
     userSocket: WSContext,
 ) => {
     const socket = roomToHostMap.get(roomId);
@@ -30,6 +62,7 @@ const handleJoinRoom = async (
     const roomUsers = roomToUsersMap.get(roomId) ?? new Map();
     roomUsers.set(userId, userSocket);
     roomToUsersMap.set(roomId, roomUsers);
+    userToRoomMap.set(userId, roomId);
     customLogger(`RoomToUsersMap: ${prettyPrint(Array.from(roomToUsersMap))}`);
     customLogger(`User: ${userId} added to room ${roomId}`);
     userSocket.send(
@@ -198,6 +231,7 @@ const broadcastMessage = (roomId: string, roomToUsersMap: Map<string, Map<string
 };
 
 export const SocketService = {
+    handleLeaveRoom,
     handleJoinRoom,
     handleRoomMatch,
     handleTimerStart,

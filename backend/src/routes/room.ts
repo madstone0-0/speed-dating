@@ -23,7 +23,7 @@ room.post("/", createReqValdiator, async (c) => {
     try {
         const validated = c.req.valid("json");
         const { genderMatching, conversationTime, matchSetting } = validated;
-        const userId = c.get('jwtPayload');
+        const userId = c.get("jwtPayload");
         const room = await RoomService.createRoom(userId!, conversationTime, matchSetting, genderMatching);
         return sendSR(c, room);
     } catch (e) {
@@ -39,7 +39,7 @@ room.post("/", createReqValdiator, async (c) => {
 
 room.post("/join/:roomId", async (c) => {
     try {
-        const userId = c.get('jwtPayload');
+        const userId = c.get("jwtPayload");
         const { roomId } = c.req.param();
 
         await RoomService.joinRoom(userId!, roomId);

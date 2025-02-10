@@ -1,4 +1,4 @@
-import { EventHandler, MouseEventHandler, useEffect, useRef, useState } from "react";
+import React, { EventHandler, MouseEventHandler, useEffect, useRef, useState, SetStateAction, Dispatch } from "react";
 import { API_BASE } from "./constants";
 import "./../styles/lobby.css";
 import { SOCKET_BASE } from "./constants";
@@ -6,8 +6,15 @@ import { SocketMessageTypes } from "./constants/sockets";
 import { Timer } from "./timer";
 import { RoomCreationInfo, RoomInfo, RoomSocketMessage } from "../types";
 import { ratatosk } from "./utils/Fetch";
+import { getSessionStore, removeSessionStore } from "./utils";
+import { useNavigate } from "react-router-dom";
+import { AxiosError } from "axios";
 
-export function HostLobby() {
+interface HostLobbyProps {
+    setUserCreated: Dispatch<SetStateAction<boolean>>;
+}
+
+export function HostLobby({ setUserCreated }: HostLobbyProps) {
     const [qrCodeUrl, setQrCodeUrl] = useState("");
     const [error, setError] = useState(false);
     const [users, setUsers] = useState([]);
@@ -16,6 +23,7 @@ export function HostLobby() {
         conversationTime: 60,
         genderMatching: false,
     });
+    const nav = useNavigate();
     const round = useRef<number>(0);
     const roomInfo = useRef<RoomInfo>();
     const socket = useRef<WebSocket | null>();
@@ -24,23 +32,37 @@ export function HostLobby() {
 
     const getMatches = async (roomInfo: RoomInfo) => {
         try {
-            const res = await ratatosk.post<any>(`${API_BASE}/room/match`, {
-                ...roomInfo,
-            });
+            const res = await ratatosk.post<any>(
+                `${API_BASE}/room/match`,
+                {
+                    ...roomInfo,
+                },
+                {
+                    headers: {
+                        Authorization: getSessionStore("token"),
+                    },
+                },
+            );
 
             if (res.status != 200) {
                 setError(true);
                 console.log(`Error generating matches -> ${res}`);
-                return;
+                return false;
             }
 
             const response = res.data.data;
             maxMatches.current = response.length;
             console.log({ response });
             sessionStorage.setItem("matches", JSON.stringify(response));
-            return response;
+            return true;
         } catch (e) {
+            if (e instanceof AxiosError && e.status && e.status === 498) {
+                alert("Token has expired you will be redirected to the home page");
+                removeSessionStore("token");
+                setUserCreated(false);
+            }
             console.error({ e });
+            return false;
         }
     };
 
@@ -143,16 +165,24 @@ export function HostLobby() {
     const handleMatch: MouseEventHandler = async (e) => {
         e.preventDefault();
         if (users.length === 0) return;
-        await getMatches(roomInfo.current!);
+        if (!(await getMatches(roomInfo.current!))) return;
         SendMatches(roomInfo.current!.roomId!);
         setSessionStart(true);
     };
 
     const createRoom = async () => {
         try {
-            const request = await ratatosk.post<any>(`${API_BASE}/room`, {
-                ...createRoomInfo,
-            });
+            const request = await ratatosk.post<any>(
+                `${API_BASE}/room`,
+                {
+                    ...createRoomInfo,
+                },
+                {
+                    headers: {
+                        Authorization: getSessionStore("token"),
+                    },
+                },
+            );
 
             if (request.status != 201) {
                 setError(true);
@@ -180,29 +210,52 @@ export function HostLobby() {
             setError(true);
             console.log("Error creating room");
             console.log({ RoomCreationError: e });
-            alert("An unexpected error occured. Refresh the page to retry");
+            if (e instanceof AxiosError && e.status && e.status === 498) {
+                alert("Token has expired you will be redirected to the home page");
+                removeSessionStore("token");
+                setUserCreated(false);
+                return;
+            } else alert("An unexpected error occured. Refresh the page to retry");
         }
     };
     return (
-        <div className="main">
+        <>
             {!sessionStart ? (
                 <>
-                    <div className="qrHolder">
-                        <h1> Scan the QR code to join the room!</h1>
-                        {qrCodeUrl == "" ? <h1>Loading...</h1> : <img src={qrCodeUrl} />}
+                    <div className="flex flex-col justify-center items-center p-5 md:flex-row">
+                        <h1 className="header"> Scan the QR code to join the room!</h1>
+                        <div className="flex justify-center items-center m-10 w-[18.75rem] h-[18.75rem]">
+                            {qrCodeUrl === "" ? (
+                                <h1 className="text-center header">Loading...</h1>
+                            ) : (
+                                <img
+                                    className="object-contain w-full h-full"
+                                    src={qrCodeUrl}
+                                    alt="QR Code"
+                                    width="300"
+                                    height="300"
+                                />
+                            )}
+                        </div>
                     </div>
                     <div className="nameHolder">
                         {users.map((u) => {
-                            return <h2 key={u}>{u}</h2>;
+                            return (
+                                <h2 className="text-2xl font-medium" key={u}>
+                                    {u}
+                                </h2>
+                            );
                         })}
                     </div>
-                    <button onClick={handleMatch}>Match</button>
+                    <button className="m-2" onClick={handleMatch}>
+                        Match
+                    </button>
                 </>
             ) : (
                 <>
                     <Timer socket={socket.current!} time={0} />
                 </>
             )}
-        </div>
+        </>
     );
 }

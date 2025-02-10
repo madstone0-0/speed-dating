@@ -16,6 +16,7 @@ import { SocketService } from "../services/SocketService.js";
 import { customLogger } from "../logger.js";
 import { prettyPrint } from "../utils.js";
 import { WSContext } from "hono/ws";
+import { RoomService } from "../services/RoomService.js";
 
 const ws = new Hono();
 
@@ -31,6 +32,12 @@ const roomToHostmap = new Map<string, WSContext>();
 
 const roomToTimerMap = new Map<string, [number, number, NodeJS.Timeout | undefined]>();
 // roomId -> [ timeLeft, wantToExtend, timerObj ]
+
+const socketToUserMap = new Map<WSContext, string>();
+// userId -> userSocket
+
+const userToRoomMap = new Map<string, string>();
+// userId -> roomId
 
 ws.get(
     "/ws",
@@ -52,7 +59,15 @@ ws.get(
                             //we send the updated list of users in the room to the host
                             // and add them to the roomToUsersMap with their socket
                             const { roomId, userId } = message as JoinSocketMessage;
-                            SocketService.handleJoinRoom(roomId!, userId!, roomToHostmap, roomToUsersMap, socket);
+                            socketToUserMap.set(socket, userId);
+                            SocketService.handleJoinRoom(
+                                roomId!,
+                                userId!,
+                                roomToHostmap,
+                                roomToUsersMap,
+                                userToRoomMap,
+                                socket,
+                            );
                         }
                         break;
                     case MessageTypes.MATCH:
@@ -131,7 +146,9 @@ ws.get(
                 customLogger(`Error on message -> ${e}`);
             }
         },
-        onClose: () => {
+        onClose: (event, sock) => {
+            SocketService.handleLeaveRoom(sock, roomToHostmap, roomToUsersMap, userToRoomMap, socketToUserMap);
+            customLogger(prettyPrint(event));
             console.log("Connection closed");
         },
     })),

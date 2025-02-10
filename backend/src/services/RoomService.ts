@@ -238,10 +238,22 @@ const joinRoom = async (userId: string, roomId: string) => {
     return room;
 };
 
+const leaveRoom = async (userId: string, roomId: string) => {
+    const room = await getRoom(roomId);
+
+    if (!room) return undefined;
+
+    const newUsers = room.users.filter((u) => !u._id.equals(userId));
+    room.users = newUsers;
+    await room.save();
+    return room;
+};
+
 export const RoomService = {
     createRoom,
     generateRoomQRCode,
     getRoom,
     joinRoom,
+    leaveRoom,
     matchRoomMembers,
 };

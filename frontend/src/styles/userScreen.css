@@ -5,7 +5,6 @@
 }
 
 .sessionDiv h1 {
-    font-size: medium;
     color: rgba(0, 0, 0, 0.372);
     font-weight: bolder;
 }
@@ -35,11 +34,15 @@ input {
 }
 
 button {
-    width: 100px;
+    padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: border-color 0.25s;
+    min-width: 7rem;
     font-weight: bold;
     border-radius: 0;
     border: 5px;
-    border-style: solid
+    border-style: solid;
+    background-color: black;
 }
 
 button:hover{

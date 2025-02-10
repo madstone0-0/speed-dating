@@ -6,6 +6,8 @@ import { JoinSocketMessage, SocketMessage, TimerExtendMessage } from "../types";
 import "./../styles/userScreen.css";
 import { Timer } from "../Components/timer";
 import { ratatosk } from "../Components/utils/Fetch";
+import { getSessionStore, removeSessionStore, setSessionStore } from "../Components/utils";
+import { AxiosError } from "axios";
 
 export function UserScreen() {
     const socket = useRef<WebSocket | null>();
@@ -46,6 +48,8 @@ export function UserScreen() {
             }
 
             const data = request.data.data;
+            const token = request.data.extra.token;
+            setSessionStore("token", token);
             console.log("the _id ->", data._id);
             userId.current = data._id;
             console.log("Response ->", request);
@@ -59,7 +63,16 @@ export function UserScreen() {
 
     const joinRoom = async () => {
         try {
-            const request = await ratatosk.post<any>(`${API_BASE}/room/join/${roomId}`, {});
+            const request = await ratatosk.post<any>(
+                `${API_BASE}/room/join/${roomId}`,
+                {},
+                {
+                    headers: {
+                        Authorization: getSessionStore("token"),
+                    },
+                },
+            );
+
             if (request.status != 200) {
                 //need to do better error management here
                 console.log("Error joining room -> ", request);
@@ -71,7 +84,12 @@ export function UserScreen() {
             setJoinedRoomBackend(true);
         } catch (e: any) {
             console.log("Error creating room");
-            alert("An unexpected error occured. Refresh the page to retry");
+            if (e instanceof AxiosError && e.status && e.status === 498) {
+                // Send them back to the username page?
+                // alert("Token has expired you will be redirected to the home page");
+                removeSessionStore("token");
+                return;
+            } else alert("An unexpected error occured. Refresh the page to retry");
             setLoading(false);
         }
     };
@@ -100,6 +118,7 @@ export function UserScreen() {
                 alert("Joined Successfully!");
                 setJoinedRoom(true);
                 //what happens when people refresh?
+                // their socket is destroyed and they leave the room
             } else if (type == SocketMessageTypes.MATCHED) {
                 setSentExtend(false);
                 setSessionUnderway(true);
@@ -111,7 +130,10 @@ export function UserScreen() {
             } else if (type == SocketMessageTypes.MATCH_DONE) {
                 setSentExtend(false);
                 setSessionUnderway(true);
-            } else if (type == SocketMessageTypes.MATCHING_OVER) setMatchingOver(true);
+            } else if (type == SocketMessageTypes.MATCHING_OVER) {
+                setMatchingOver(true);
+                setSessionUnderway(false);
+            }
         });
     }, []);
 
@@ -137,7 +159,8 @@ export function UserScreen() {
                 userId: userId.current!,
                 roomId: roomId!,
             };
-            socket.current!.send(JSON.stringify(message));
+            if (socket.current) socket.current.send(JSON.stringify(message));
+            else console.log("Socket not initialized");
         }
     }, [joinedRoomBackend, userId.current]);
 
@@ -149,10 +172,11 @@ export function UserScreen() {
 
     return (
         <div className="main">
+            {nickname && <h1 className="text-5xl text-center text-black/50 header">{nickname}</h1>}
             {!joinedRoom ? (
                 <>
-                    <div className="formDiv">
-                        <h1>Enter your nickname!</h1>
+                    <div className="flex flex-col items-center m-2.5 space-y-1.5">
+                        <h1 className="header">Enter your nickname!</h1>
                         <input onChange={(e) => setNickname(e.target.value)} />
                     </div>
                     <div className="buttonHolder">
@@ -182,14 +206,14 @@ export function UserScreen() {
                 </>
             ) : sessionUnderway ? (
                 <div className="sessionDiv">
-                    <h1>
-                        {" "}
+                    <h1 className="md:text-2xl header">
                         {match != ""
                             ? `Your match is ${match}!`
                             : "Due to an inbalance in numbers. You have not been matched. Better luck next round"}{" "}
                     </h1>
                     <button
-                        disabled={sentExtend || match == ""}
+                        className="m-2"
+                        disabled={sentExtend || match == "" || !sessionUnderway}
                         onClick={(e) => {
                             e.preventDefault();
                             handleExtend();
@@ -201,10 +225,10 @@ export function UserScreen() {
                 </div>
             ) : matchingOver ? (
                 <div>
-                    <h1>Matching over!</h1>
+                    <h1 className="header">Matching over!</h1>
                 </div>
             ) : (
-                <h1>Waiting for the host to begin matching!</h1>
+                <h1 className="header">Waiting for the host to begin matching!</h1>
             )}
         </div>
     );
