@@ -25,7 +25,13 @@ const app = new Hono();
 app.use(
     cors({
         // origin: "*", // Allow all origins (not recommended for production)
-        origin: ["http://localhost:5173", "http://localhost:8080", "https://speed-dating.surge.sh"],
+        origin: [
+            "http://localhost:5173",
+            "http://localhost:8080",
+            "https://speed-dating.surge.sh",
+            "http://speed-dating.surge.sh",
+            "http://172.16.11.35:5173",
+        ],
         allowMethods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed methods
         allowHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
         maxAge: 600, // Cache the preflight response for 600 seconds
