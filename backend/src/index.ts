@@ -12,6 +12,7 @@ import * as dotenv from "dotenv";
 import mongoose from "mongoose";
 import room from "./routes/room.js";
 
+
 dotenv.config();
 
 const mongoUri = process.env.MONGO_URI as string;

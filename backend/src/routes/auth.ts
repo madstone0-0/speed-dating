@@ -3,8 +3,7 @@ import { sendData, sendMsg, sendSR } from "../utils.js";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import AuthService from "../services/AuthService.js";
-import type { SignupUser } from "../types.js";
-import { setCookie, getCookie, deleteCookie } from "hono/cookie";
+import { sign } from "hono/jwt";
 
 const auth = new Hono();
 
@@ -23,16 +22,15 @@ auth.post("/signup", signupValidator, async (c) => {
     try {
         const validated = c.req.valid("json");
         const res = await AuthService.SignUp(validated);
-        const cookie = getCookie(c, "userId");
-        //cookies because cookies are automatically sent with each request
+        const payload = {
+            userId: res.data!._id,
+            exp: 86400
+        };
 
-        if (cookie) deleteCookie(c, "userId");
+        const secret = process.env.SECRET!;
+        const token = await sign(payload, secret);
+        res.extra = { token: token };
 
-        setCookie(c, "userId", res.data!._id!.toString(), {
-            maxAge: 7200, //expires after 2 hours
-            sameSite: "none",
-            secure: true,
-        });
         return sendSR(c, res);
     } catch (e: any) {
         console.log("There was an error signing up -> ", e);

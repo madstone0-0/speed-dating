@@ -5,7 +5,6 @@ import { z } from "zod";
 import { RoomService } from "../services/RoomService.js";
 import { prettyPrint, sendSR } from "../utils.js";
 import { customLogger } from "../logger.js";
-import { getCookie } from "hono/cookie";
 
 const room = new Hono();
 
@@ -24,7 +23,7 @@ room.post("/", createReqValdiator, async (c) => {
     try {
         const validated = c.req.valid("json");
         const { genderMatching, conversationTime, matchSetting } = validated;
-        const userId = getCookie(c, "userId");
+        const userId = c.get('jwtPayload');
         const room = await RoomService.createRoom(userId!, conversationTime, matchSetting, genderMatching);
         return sendSR(c, room);
     } catch (e) {
@@ -40,7 +39,7 @@ room.post("/", createReqValdiator, async (c) => {
 
 room.post("/join/:roomId", async (c) => {
     try {
-        const userId = getCookie(c, "userId");
+        const userId = c.get('jwtPayload');
         const { roomId } = c.req.param();
 
         await RoomService.joinRoom(userId!, roomId);

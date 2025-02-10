@@ -37,7 +37,7 @@ export function HostLobby() {
             const response = res.data.data;
             maxMatches.current = response.length;
             console.log({ response });
-            localStorage.setItem("matches", JSON.stringify(response));
+            sessionStorage.setItem("matches", JSON.stringify(response));
             return response;
         } catch (e) {
             console.error({ e });
@@ -46,7 +46,7 @@ export function HostLobby() {
 
     const SendMatches = async (roomId: string) => {
         try {
-            const matches = JSON.parse(localStorage.getItem("matches")!);
+            const matches = JSON.parse(sessionStorage.getItem("matches")!);
             const matchesForRound = matches![round.current];
             console.log("matches for round -> ", matchesForRound);
 
