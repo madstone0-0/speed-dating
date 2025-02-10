@@ -8,7 +8,7 @@ export function SuggestedTopics(){
     const [topics, setTopics] = useState("Loading...");
 
     async function getSuggestedTopics(){
-        const genAI = new GoogleGenerativeAI("YOUR_API_KEY");
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_SECRET!);
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = "Give me a list of suggested topics for a first date";
