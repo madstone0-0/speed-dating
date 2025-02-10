@@ -9,6 +9,7 @@ import { ratatosk } from "./utils/Fetch";
 import { getSessionStore, removeSessionStore } from "./utils";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
+import { useWebSocketWithHeartbeat } from "./utils/hooks";
 
 interface HostLobbyProps {
     setUserCreated: Dispatch<SetStateAction<boolean>>;
@@ -23,10 +24,9 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
         conversationTime: 60,
         genderMatching: false,
     });
-    const nav = useNavigate();
     const round = useRef<number>(0);
     const roomInfo = useRef<RoomInfo>();
-    const socket = useRef<WebSocket | null>();
+    const socket = useWebSocketWithHeartbeat();
     const maxMatches = useRef(0);
     const [sessionStart, setSessionStart] = useState(false);
 
@@ -104,16 +104,7 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
     }, []);
 
     useEffect(() => {
-        socket.current = new WebSocket(SOCKET_BASE);
-        socket.current.addEventListener("open", () => {
-            console.log("Connection created!");
-        });
-
-        socket.current.onclose = () => {
-            console.log("Connection Closed");
-        };
-
-        socket.current.addEventListener("message", (event) => {
+        socket.current?.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
             console.log("Socket message -> ", data);
             console.log(`Max Matches: ${maxMatches.current}`);
@@ -152,10 +143,6 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
                     break;
             }
         });
-
-        return () => {
-            socket.current?.close();
-        };
     }, []);
 
     useEffect(() => {
@@ -200,7 +187,7 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
             };
 
             setQrCodeUrl(qrCodeUrl);
-            socket.current!.send(
+            socket.current?.send(
                 JSON.stringify({
                     type: SocketMessageTypes.HOST,
                     roomId: _id,

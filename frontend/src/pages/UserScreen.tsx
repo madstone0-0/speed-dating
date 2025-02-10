@@ -8,9 +8,10 @@ import { Timer } from "../Components/timer";
 import { ratatosk } from "../Components/utils/Fetch";
 import { getSessionStore, removeSessionStore, setSessionStore } from "../Components/utils";
 import { AxiosError } from "axios";
+import { useWebSocketWithHeartbeat } from "../Components/utils/hooks";
 
 export function UserScreen() {
-    const socket = useRef<WebSocket | null>();
+    const socket = useWebSocketWithHeartbeat();
     const { roomId } = useParams();
     const [joinedRoomBackend, setJoinedRoomBackend] = useState(false);
     const [joinedRoom, setJoinedRoom] = useState(false);
@@ -100,16 +101,7 @@ export function UserScreen() {
     }, []);
 
     useEffect(() => {
-        socket.current = new WebSocket(SOCKET_BASE);
-        socket.current.addEventListener("open", () => {
-            console.log("User socket connection created");
-        });
-
-        socket.current.onclose = () => {
-            console.log("Connection Closed");
-        };
-
-        socket.current.addEventListener("message", (event) => {
+        socket.current?.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
             console.log("Socket message -> ", data);
 
@@ -221,7 +213,7 @@ export function UserScreen() {
                     >
                         Extend
                     </button>
-                    <Timer socket={socket.current!} time={0} />
+                    {socket.current && <Timer socket={socket.current} time={0} />}
                 </div>
             ) : matchingOver ? (
                 <div>

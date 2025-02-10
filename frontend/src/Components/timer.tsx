@@ -33,7 +33,7 @@ export function Timer({ socket, time }: timerProps) {
     };
     return (
         <>
-            <h1 className="text-5xl md:text-9xl" id="time">
+            <h1 className="text-7xl md:text-9xl" id="time">
                 {getMinutes(timeLeft)} : {getSeconds(timeLeft)}
             </h1>
         </>

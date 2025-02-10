@@ -148,7 +148,6 @@ ws.get(
         },
         onClose: (event, sock) => {
             SocketService.handleLeaveRoom(sock, roomToHostmap, roomToUsersMap, userToRoomMap, socketToUserMap);
-            customLogger(prettyPrint(event));
             console.log("Connection closed");
         },
     })),

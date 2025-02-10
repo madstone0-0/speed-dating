@@ -1,5 +1,6 @@
 let API_BASE = "";
 let SOCKET_BASE = "";
+export const PING_INTERVAL = 30000;
 
 if (import.meta.env.PROD) {
     API_BASE = "https://speed-dating-f38da0073ab0.herokuapp.com";
