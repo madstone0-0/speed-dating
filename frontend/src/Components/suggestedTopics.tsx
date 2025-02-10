@@ -1,14 +1,11 @@
 import { useEffect, useState } from "react";
-import  { GoogleGenerativeAI } from "@google/generative-ai";
-import * as dotenv from 'dotenv';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-dotenv.config();
-
-export function SuggestedTopics(){
+export function SuggestedTopics() {
     const [topics, setTopics] = useState("Loading...");
 
-    async function getSuggestedTopics(){
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_SECRET!);
+    async function getSuggestedTopics() {
+        const genAI = new GoogleGenerativeAI(import.meta.env.GEMINI_SECRET!);
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = "Give me a list of suggested topics for a first date";
@@ -17,13 +14,14 @@ export function SuggestedTopics(){
         setTopics(result.response.text);
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         getSuggestedTopics();
     }, []);
 
     return (
         <>
-        <p>{topics}</p>
+            <p>{topics}</p>
         </>
-    )
+    );
 }
+
