@@ -24,7 +24,7 @@ auth.post("/signup", signupValidator, async (c) => {
         const res = await AuthService.SignUp(validated);
         const payload = {
             userId: res.data!._id,
-            exp: Math.floor(Date.now() / 1000) + 60 * 5, // Expiry time is not relative but absolute, set to 5 minutes
+            exp: Math.floor(Date.now() / 1000) + 60 * 60, // Expiry time is not relative but absolute, set to 5 minutes
         };
 
         const secret = process.env.SECRET!;
