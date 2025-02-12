@@ -23,7 +23,7 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
     const [createRoomInfo, setCreateRoomInfo] = useState<RoomCreationInfo>({
         matchSetting: "RANDOM",
         conversationTime: 60,
-        genderMatching: false,
+        genderMatching: true,
     });
     const round = useRef<number>(0);
     const roomInfo = useRef<RoomInfo>();
