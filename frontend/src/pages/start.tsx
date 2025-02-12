@@ -5,6 +5,7 @@ import { HostLobby } from "../Components/hostLobby";
 import { v4 } from "uuid";
 import { ratatosk } from "../Components/utils/Fetch";
 import { setSessionStore } from "../Components/utils";
+import { Heart } from "../Components/heart";
 
 export function Start() {
     const [loading, setLoading] = useState(false);
@@ -45,6 +46,9 @@ export function Start() {
                     </button>
                 </>
             )}
+            <Heart/>
+            <Heart/>
+            <Heart/>
         </div>
     );
 }

@@ -10,6 +10,7 @@ import { getSessionStore, removeSessionStore } from "./utils";
 import { useNavigate } from "react-router-dom";
 import { AxiosError } from "axios";
 import { useWebSocketWithHeartbeat } from "./utils/hooks";
+import { Heart } from "./heart";
 
 interface HostLobbyProps {
     setUserCreated: Dispatch<SetStateAction<boolean>>;
