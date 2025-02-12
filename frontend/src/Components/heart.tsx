@@ -1,45 +1,42 @@
 import { useEffect, useRef, useState } from "react";
-import heart from './../assets/heart.png';
-import '../styles/heart.css'
+import heart from "./../assets/heart.png";
+import "../styles/heart.css";
 
-export function Heart(){
-    const x = useRef<number>(Math.random()*window.innerWidth);
-    const y = useRef<number>(Math.random()*window.innerHeight);
-    
+export function Heart() {
+    const x = useRef<number>(Math.random() * window.innerWidth);
+    const y = useRef<number>(Math.random() * window.innerHeight);
+
     const animationReference = useRef(0);
     const heartRef = useRef<HTMLImageElement>(null);
 
     const speed = 5;
-    const angle = Math.random() * 2* Math.PI;
-    const velocityX = speed*Math.cos(angle);
-    const velocityY = speed*Math.sin(angle);
+    const angle = Math.random() * 2 * Math.PI;
+    const velocityX = speed * Math.cos(angle);
+    const velocityY = speed * Math.sin(angle);
 
-    const move = ()=>{
-        x.current+= velocityX; y.current+=velocityY;
-        
-        if(x.current >= window.innerWidth) x.current = 0;
-        if(x.current < 0) x.current = window.innerWidth;
+    const move = () => {
+        x.current += velocityX;
+        y.current += velocityY;
 
-        if(y.current >= window.innerHeight) y.current = 0;
-        if(y.current < 0) y.current = window.innerHeight; 
-        
-        if(heartRef.current){
+        if (x.current >= window.innerWidth) x.current = 0;
+        if (x.current < 0) x.current = window.innerWidth;
+
+        if (y.current >= window.innerHeight) y.current = 0;
+        if (y.current < 0) y.current = window.innerHeight;
+
+        if (heartRef.current) {
             heartRef.current.style.transform = `translate(${x.current}px, ${y.current}px)`;
         }
-        console.log(x.current);
-        console.log(y.current);
         animationReference.current = requestAnimationFrame(move);
-    }
+    };
 
-    useEffect(()=>{
+    useEffect(() => {
         animationReference.current = requestAnimationFrame(move);
-        return ()=>{
+        return () => {
             cancelAnimationFrame(animationReference.current);
-        }
-    }, [])
+        };
+    }, []);
 
-    return (
-        <img ref = {heartRef} src={heart} id = 'heart'/>
-    );
-
+    return <img ref={heartRef} src={heart} id="heart" />;
 }
+

@@ -81,46 +81,48 @@ const matchGendered = async (
     memberMap: Map<Mongoose.Types.ObjectId, Set<Mongoose.Types.ObjectId>>,
     users: (User | null)[],
 ) => {
-    // Split into male and female
-    const male = users.filter((m) => m!.gender == Gender.MALE).map((u) => u!._id!);
-    const female = users.filter((m) => m!.gender == Gender.FEMALE).map((u) => u!._id!);
+    // Split into male and female, filtering out nulls
+    const male = users.filter((m): m is User => m !== null && m.gender === Gender.MALE).map((u) => u._id!);
+    const female = users.filter((m): m is User => m !== null && m.gender === Gender.FEMALE).map((u) => u._id!);
+
     customLogger(prettyPrint(male));
     customLogger(prettyPrint(female));
 
     const roundMatches = [];
+    // Use the minimum length to ensure we don't exceed available matches
+    const numberOfRounds = Math.min(male.length, female.length);
 
-    const round = Math.max(male.length, female.length);
-    for (let i = 0; i < round; ++i) {
+    for (let round = 0; round < numberOfRounds; ++round) {
         const matched = new Set<Mongoose.Types.ObjectId>();
-        //keeps track of all the people that have been matched so far in this round
         const matches = [];
-        for (let j = 0; j < male.length; ++j) {
-            //hella patriarchal... my bad - Tani
-            let femaleIndex = 0;
-            let foundMatch;
-            if (!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
 
-            while (memberMap.get(male[j])!.has(female[femaleIndex]) || matched.has(female[femaleIndex])) {
-                femaleIndex++;
-                if (femaleIndex == female.length) break;
+        for (const maleId of male) {
+            if (!memberMap.has(maleId)) {
+                memberMap.set(maleId, new Set<Mongoose.Types.ObjectId>());
             }
 
-            foundMatch = femaleIndex < female.length ? female[femaleIndex] : undefined;
-            const user1 = await UserService.getUserById(male[j].toString());
-            const user2 = foundMatch ? await UserService.getUserById(foundMatch!.toString()) : null;
+            // Find the first unmatched female who hasn't been matched with this male before
+            const availableFemale = female.find(
+                (femaleId) => !matched.has(femaleId) && !memberMap.get(maleId)!.has(femaleId),
+            );
+
+            const user1 = await UserService.getUserById(maleId.toString());
+            const user2 = availableFemale ? await UserService.getUserById(availableFemale.toString()) : null;
+
             matches.push({
                 user1: user1!,
                 user2: user2,
             });
-            if (foundMatch) {
-                //if we have a match
-                //add to the list of matches for the person and the list of matches for that round
-                matched.add(foundMatch);
-                memberMap.get(male[j])!.add(foundMatch);
+
+            if (availableFemale) {
+                matched.add(availableFemale);
+                memberMap.get(maleId)!.add(availableFemale);
             }
         }
+
         roundMatches.push(matches);
     }
+
     return roundMatches;
 };
 
