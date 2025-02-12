@@ -170,7 +170,7 @@ export function UserScreen() {
                 <>
                     <div className="flex flex-col items-center m-2.5 space-y-1.5">
                         <h1 className="header">Enter your nickname!</h1>
-                        <input onChange={(e) => setNickname(e.target.value)} />
+                        <input className="input" onChange={(e) => setNickname(e.target.value)} />
                     </div>
                     <div className="buttonHolder">
                         <button
@@ -215,7 +215,7 @@ export function UserScreen() {
                         Extend
                     </button>
                     {/* <Timer socket={socket.current!} time={0} /> */}
-                    <SuggestedTopics/>
+                    <SuggestedTopics />
                     {/* {socket.current && <Timer socket={socket.current} time={0} />} */}
                 </div>
             ) : matchingOver ? (

@@ -84,6 +84,8 @@ const matchGendered = async (
     // Split into male and female
     const male = users.filter((m) => m!.gender == Gender.MALE).map((u) => u!._id!);
     const female = users.filter((m) => m!.gender == Gender.FEMALE).map((u) => u!._id!);
+    customLogger(prettyPrint(male));
+    customLogger(prettyPrint(female));
 
     const roundMatches = [];
 

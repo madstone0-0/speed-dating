@@ -1,7 +1,9 @@
 .sessionDiv {
     display: flex;
     flex-direction: column;
-    align-items: center
+    align-items: center;
+  justify-items: center;
+  width: 100%;
 }
 
 .sessionDiv h1 {
@@ -9,7 +11,7 @@
     font-weight: bolder;
 }
 
-input {
+.input {
     border: 5px;
     border-style: solid;
     height: 50px;

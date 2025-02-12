@@ -146,7 +146,7 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
         });
 
         return () => {
-            alert('Socket connection closed.\nThis is usually due to poor or weak wifi. Refresh and start again')
+            alert("Socket connection closed.\nThis is usually due to poor or weak wifi. Refresh and start again");
             socket.current?.close();
         };
     }, []);
@@ -231,7 +231,7 @@ export function HostLobby({ setUserCreated }: HostLobbyProps) {
                             )}
                         </div>
                     </div>
-                    <div className="nameHolder">
+                    <div className="break-words h-102 nameHolder">
                         {users.map((u) => {
                             return (
                                 <h2 className="text-2xl font-medium" key={u}>

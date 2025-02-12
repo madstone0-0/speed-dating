@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Questions from "./questions";
 
 export function SuggestedTopics() {
     const [loading, setLoading] = useState(false);
@@ -50,12 +51,5 @@ USE THIS FORMAT EXACTLY OR YOU DIE.
     }, []);
 
     if (loading) return <h1>Loading</h1>;
-    return (
-        <>
-            {topics.map((t) => (
-                <p>{t}</p>
-            ))}
-        </>
-    );
+    return <Questions questions={topics} />;
 }
-
