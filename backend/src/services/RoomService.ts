@@ -98,9 +98,8 @@ const matchGendered = async (
             let foundMatch;
             if (!memberMap.has(male[j])) memberMap.set(male[j], new Set<Mongoose.Types.ObjectId>());
 
-            while (memberMap.get(male[j])!.has(female[femaleIndex]) || matched.has(female[femaleIndex])) {
+            while ((memberMap.get(male[j])!.has(female[femaleIndex]) || matched.has(female[femaleIndex])) && femaleIndex < female.length) {
                 femaleIndex++;
-                if (femaleIndex == female.length) break;
                 //we are looking for a female that hasn't been matched before and that hasn't been matched with
                 //this guy before
             }
