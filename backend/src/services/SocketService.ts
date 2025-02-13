@@ -171,7 +171,7 @@ const handleTimerExtend = async (
 
     if (wantToExtend >= threshold) {
         timeLeft += extension; // Add more time
-        roomToTimerMap.set(roomId, [timeLeft, 0, timerObj]);
+        roomToTimerMap.set(roomId, [timeLeft, 0, timerObj]); //reseting the number of people that want to extend
         const sockets = roomToUsersMap.get(roomId)!.values();
         const extendedMessage: TimerExtendedMesessage = {
             type: MessageTypes.EXTENDED,
